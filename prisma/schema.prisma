@@ -1,43 +1,26 @@
-// Prisma schema for Better Auth
-// learn more: https://better-auth.com/docs/concepts/database
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
-
-// NOTE: When using mysql or sqlserver, uncomment the //@db.Text annotations in model Account below
-// Further reading:
-// https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  createdBy   User   @relation(fields: [createdById], references: [id])
-  createdById String
-
-  @@index([name])
-}
-
 model User {
-  id            String    @id
-  name          String //@db.Text
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String? //@db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  posts         Post[]
+  id               String            @id @default(cuid())
+  name             String
+  email            String
+  emailVerified    Boolean           @default(false)
+  image            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @default(now()) @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  memberships      Membership[]
+  events           Event[]
+  eventAttendances EventAttendance[]
 
   @@unique([email])
   @@map("user")
@@ -49,8 +32,8 @@ model Session {
   token     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  ipAddress String? //@db.Text
-  userAgent String? //@db.Text
+  ipAddress String? //
+  userAgent String? //
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -60,17 +43,17 @@ model Session {
 
 model Account {
   id                    String    @id
-  accountId             String //@db.Text
-  providerId            String //@db.Text
+  accountId             String
+  providerId            String
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String? //@db.Text
-  refreshToken          String? //@db.Text
-  idToken               String? //@db.Text
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
   accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope                 String? //@db.Text
-  password              String? //@db.Text
+  scope                 String?
+  password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -79,11 +62,97 @@ model Account {
 
 model Verification {
   id         String   @id
-  identifier String //@db.Text
-  value      String //@db.Text
+  identifier String
+  value      String
   expiresAt  DateTime
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
+  roles       Role[]
+  memberships Membership[]
+  events      Event[]
+
+  @@map("organization")
+}
+
+enum Permission {
+  CREATE_EVENT
+  EDIT_EVENT
+  DELETE_EVENT
+  MANAGE_MEMBERS
+}
+
+model Role {
+  orgId       String
+  name        String
+  permissions Permission[]
+
+  org         Organization @relation(fields: [orgId], references: [id])
+  memberships Membership[]
+
+  createdAt DateTime @default(now())
+
+  @@id([orgId, name])
+}
+
+model Membership {
+  orgId  String
+  userId String
+  role   Role   @relation(fields: [roleOrgId, roleName], references: [orgId, name])
+
+  org  Organization @relation(fields: [orgId], references: [id])
+  user User         @relation(fields: [userId], references: [id])
+
+  roleName  String
+  roleOrgId String
+
+  @@id([orgId, userId])
+}
+
+model Event {
+  id   String @id @default(cuid())
+  name String
+
+  startsAt DateTime
+  endsAt   DateTime
+
+  description String?
+  location    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  orgId            String
+  org              Organization      @relation(fields: [orgId], references: [id])
+  eventAttendances EventAttendance[]
+}
+
+enum EventStatus {
+  ATTENDING
+  NOT_ATTENDING
+  PENDING
+}
+
+model EventAttendance {
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  status EventStatus @default(PENDING)
+
+  @@id([eventId, userId])
 }
