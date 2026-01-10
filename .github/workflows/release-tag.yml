@@ -1,0 +1,19 @@
+name: Release Tag
+on:
+  push:
+    branches:
+      - main
+jobs:
+  tag_release:
+    if: ${{ !contains(toJson(github.event.commits.*.message),'#skip') }}
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.64.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WITH_V: true
+          DEFAULT_BUMP: patch
