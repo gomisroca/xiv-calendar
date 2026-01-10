@@ -13,7 +13,7 @@ model User {
   id               String            @id @default(cuid())
   name             String
   email            String
-  emailVerified    Boolean           @default(false)
+  emailVerified    DateTime?
   image            String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @default(now()) @updatedAt
@@ -28,48 +28,38 @@ model User {
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String? //
-  userAgent String? //
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([token])
-  @@map("session")
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Account {
-  id                    String    @id
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? // @db.Text
+  access_token             String? // @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? // @db.Text
+  session_state            String?
+  user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refresh_token_expires_in Int?
 
-  @@map("account")
+  @@unique([provider, providerAccountId])
 }
 
-model Verification {
-  id         String   @id
+model VerificationToken {
   identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  token      String   @unique
+  expires    DateTime
 
-  @@map("verification")
+  @@unique([identifier, token])
 }
 
 model Organization {

@@ -1,12 +1,10 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/server/better-auth";
-import { getSession } from "@/server/better-auth/server";
+import { auth, signIn, signOut } from "@/server/auth";
 import Calendar from "./calendar";
 
 export default async function Home() {
-  const session = await getSession();
+  const session = await auth();
 
   return (
     <>
@@ -22,16 +20,7 @@ export default async function Home() {
                 className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
                 formAction={async () => {
                   "use server";
-                  const res = await auth.api.signInSocial({
-                    body: {
-                      provider: "discord",
-                      callbackURL: "/",
-                    },
-                  });
-                  if (!res.url) {
-                    throw new Error("No URL returned from signInSocial");
-                  }
-                  redirect(res.url);
+                  await signIn("discord");
                 }}
               >
                 Sign in with Discord
@@ -43,9 +32,7 @@ export default async function Home() {
                 className="rounded-full bg-white/10 px-10 py-3 font-semibold no-underline transition hover:bg-white/20"
                 formAction={async () => {
                   "use server";
-                  await auth.api.signOut({
-                    headers: await headers(),
-                  });
+                  await signOut();
                   redirect("/");
                 }}
               >

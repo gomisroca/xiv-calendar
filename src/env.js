@@ -3,13 +3,19 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    BETTER_AUTH_SECRET:
+    AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string()
         : z.string().optional(),
-    BETTER_AUTH_CALLBACK_URL: z.string().url(),
-    BETTER_AUTH_DISCORD_CLIENT_ID: z.string(),
-    BETTER_AUTH_DISCORD_CLIENT_SECRET: z.string(),
+    AUTH_URL: z.preprocess(
+      // This makes Vercel deployments not fail if you don't set NEXTAUTH_URL
+      // Since NextAuth.js automatically uses the VERCEL_URL if present.
+      (str) => process.env.VERCEL_URL ?? str,
+      // VERCEL_URL doesn't include `https` so it cant be validated as a URL
+      process.env.VERCEL ? z.string() : z.string().url(),
+    ),
+    DISCORD_CLIENT_ID: z.string(),
+    DISCORD_CLIENT_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
     DIRECT_URL: z.string().url(),
     NODE_ENV: z
@@ -22,11 +28,10 @@ export const env = createEnv({
   },
 
   runtimeEnv: {
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_CALLBACK_URL: process.env.BETTER_AUTH_CALLBACK_URL,
-    BETTER_AUTH_DISCORD_CLIENT_ID: process.env.BETTER_AUTH_DISCORD_CLIENT_ID,
-    BETTER_AUTH_DISCORD_CLIENT_SECRET:
-      process.env.BETTER_AUTH_DISCORD_CLIENT_SECRET,
+    AUTH_SECRET: process.env.AUTH_SECRET,
+    AUTH_URL: process.env.AUTH_URL,
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+    DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     DIRECT_URL: process.env.DIRECT_URL,
     NODE_ENV: process.env.NODE_ENV,
