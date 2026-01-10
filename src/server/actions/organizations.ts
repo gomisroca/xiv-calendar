@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { db } from "@/server/db";
-import { getSession } from "@/server/better-auth/server";
+import { auth } from "@/server/auth";
 import { Permission, Prisma } from "generated/prisma";
 import { AppError } from "@/utils/errors";
 
@@ -25,7 +25,7 @@ function generateSlug(name: string) {
 }
 
 export async function createOrganization(input: unknown) {
-  const session = await getSession();
+  const session = await auth();
   if (!session?.user)
     throw new AppError("You must be signed in", "UNAUTHORIZED");
 
@@ -95,7 +95,7 @@ export async function createOrganization(input: unknown) {
 }
 
 export async function getUserOrganizations() {
-  const session = await getSession();
+  const session = await auth();
 
   if (!session?.user) {
     throw new AppError(
