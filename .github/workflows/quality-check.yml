@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      BETTER_AUTH_CALLBACK_URL: ${{ secrets.BETTER_AUTH_CALLBACK_URL }}
       BETTER_AUTH_DISCORD_CLIENT_ID: ${{ secrets.BETTER_AUTH_DISCORD_CLIENT_ID }}
       BETTER_AUTH_DISCORD_CLIENT_SECRET: ${{ secrets.BETTER_AUTH_DISCORD_CLIENT_SECRET }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
