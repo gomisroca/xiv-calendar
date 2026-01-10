@@ -13,11 +13,7 @@ type Org = {
   }[];
 };
 
-interface OrgSwitcherProps {
-  onOrgChange?: (org: Org) => void;
-}
-
-export default function OrgSwitcher({ onOrgChange }: OrgSwitcherProps) {
+export default function OrgList() {
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +27,6 @@ export default function OrgSwitcher({ onOrgChange }: OrgSwitcherProps) {
         setOrgs(data);
         if (data.length > 0) {
           setActiveOrgId(data[0]!.id);
-          onOrgChange?.(data[0]!);
         }
       } catch (err: unknown) {
         if (err instanceof AppError) setError(err.message);
@@ -42,12 +37,10 @@ export default function OrgSwitcher({ onOrgChange }: OrgSwitcherProps) {
     }
 
     void fetchOrgs();
-  }, [onOrgChange]);
+  }, []);
 
   const handleChange = (orgId: string) => {
     setActiveOrgId(orgId);
-    const selected = orgs.find((o) => o.id === orgId);
-    if (selected) onOrgChange?.(selected);
   };
 
   if (loading) return <p>Loading organizations...</p>;
