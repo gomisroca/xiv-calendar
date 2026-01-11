@@ -4,12 +4,12 @@ import { unwrap } from "@/utils/actions";
 import { notFound } from "next/navigation";
 import Calendar from "./calendar";
 
-interface PageProps {
-  params: { slug: string };
-}
-export default async function OrgView({ params }: PageProps) {
+type Params = Promise<{ slug: string }>;
+export default async function OrgView({ params }: { params: Params }) {
+  const { slug } = await params;
+
   const org = await db.organization.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { id: true, name: true },
   });
 

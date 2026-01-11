@@ -1,15 +1,13 @@
-// app/orgs/[org-slug]/create/page.tsx
 import { db } from "@/server/db";
 import { notFound } from "next/navigation";
 import { CreateEventForm } from "./create-event-form";
 
-interface PageProps {
-  params: { slug: string };
-}
+type Params = Promise<{ slug: string }>;
+export default async function CreateEventPage({ params }: { params: Params }) {
+  const { slug } = await params;
 
-export default async function CreateEventPage({ params }: PageProps) {
   const org = await db.organization.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     select: { id: true, name: true },
   });
 
