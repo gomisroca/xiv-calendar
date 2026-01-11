@@ -87,7 +87,7 @@ model Role {
   name        String
   permissions Permission[]
 
-  org         Organization @relation(fields: [orgId], references: [id])
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   memberships Membership[]
 
   createdAt DateTime @default(now())
@@ -98,10 +98,10 @@ model Role {
 model Membership {
   orgId  String
   userId String
-  role   Role   @relation(fields: [roleOrgId, roleName], references: [orgId, name])
+  role   Role   @relation(fields: [roleOrgId, roleName], references: [orgId, name], onDelete: Cascade)
 
-  org  Organization @relation(fields: [orgId], references: [id])
-  user User         @relation(fields: [userId], references: [id])
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   roleName  String
   roleOrgId String
@@ -122,11 +122,11 @@ model Event {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
   orgId            String
-  org              Organization      @relation(fields: [orgId], references: [id])
+  org              Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
   eventAttendances EventAttendance[]
 }
 
@@ -138,10 +138,10 @@ enum EventStatus {
 
 model EventAttendance {
   eventId String
-  event   Event  @relation(fields: [eventId], references: [id])
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status EventStatus @default(PENDING)
 
