@@ -6,12 +6,15 @@ import { auth } from "@/server/auth";
 import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 import { requirePermission } from "../auth/permissions";
+import { env } from "@/env";
 
 const CreateEventSchema = z.object({
   orgId: z.string().cuid(),
   name: z.string().min(1, "Event name is required"),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
 });
 
 export async function createEvent(
@@ -35,7 +38,7 @@ export async function createEvent(
     };
   }
 
-  const { orgId, name, startsAt, endsAt } = parsed.data;
+  const { orgId, name, startsAt, endsAt, description, location } = parsed.data;
 
   const permissions = await requirePermission({
     userId: session.user.id,
@@ -63,7 +66,10 @@ export async function createEvent(
           endsAt,
           orgId,
           createdById: session.user.id,
+          description,
+          location,
         },
+        include: { createdBy: { select: { name: true } } },
       });
 
       await trx.eventAttendance.create({
@@ -72,6 +78,59 @@ export async function createEvent(
           userId: session.user.id,
           status: EventStatus.ATTENDING,
         },
+      });
+
+      const embedPayload = {
+        username: "EventBot",
+        avatar_url: "https://i.imgur.com/AfFp7pu.png",
+        content: `React to RSVP for **${event.name}**!`,
+        embeds: [
+          {
+            title: event.name,
+            description: description ?? "No description provided",
+            color: 0x00ff00,
+            fields: [
+              {
+                name: "Starts",
+                value: startsAt.toLocaleString(),
+                inline: true,
+              },
+              {
+                name: "Ends",
+                value: endsAt?.toLocaleString() ?? "N/A",
+                inline: true,
+              },
+              { name: "Location", value: location ?? "N/A", inline: false },
+              { name: "Created by", value: event.createdBy.name, inline: true },
+            ],
+            timestamp: new Date().toISOString(),
+          },
+        ],
+        components: [
+          {
+            type: 1, // Action Row
+            components: [
+              {
+                type: 2, // Button
+                label: "✅ Attend",
+                style: 3, // Green button
+                custom_id: `rsvp_attend_${event.id}`,
+              },
+              {
+                type: 2,
+                label: "❌ Not attending",
+                style: 4, // Red button
+                custom_id: `rsvp_decline_${event.id}`,
+              },
+            ],
+          },
+        ],
+      };
+
+      await fetch(env.DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(embedPayload),
       });
     });
 
