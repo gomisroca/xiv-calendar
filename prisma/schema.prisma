@@ -114,7 +114,7 @@ model Event {
   name String
 
   startsAt DateTime
-  endsAt   DateTime
+  endsAt   DateTime?
 
   description String?
   location    String?
