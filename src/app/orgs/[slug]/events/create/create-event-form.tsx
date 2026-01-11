@@ -32,9 +32,9 @@ export function CreateEventForm({ orgId }: CreateEventFormProps) {
         endsAt: endsAt ? new Date(endsAt) : undefined,
       });
 
-      const eventId = unwrap(result); // Throws if success=false
+      const message = unwrap(result);
+      setMessage(message);
 
-      setMessage("Event created successfully!");
       form.reset();
     } catch (err) {
       setMessage(
