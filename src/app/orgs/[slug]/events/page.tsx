@@ -1,0 +1,43 @@
+import { getOrganizationEvents } from "@/server/actions/events";
+import { db } from "@/server/db";
+import { unwrap } from "@/utils/actions";
+import { notFound } from "next/navigation";
+
+interface PageProps {
+  params: { slug: string };
+}
+export default async function EventsPage({ params }: PageProps) {
+  const org = await db.organization.findUnique({
+    where: { slug: params.slug },
+    select: { id: true, name: true },
+  });
+
+  if (!org) notFound();
+
+  const events = unwrap(await getOrganizationEvents({ orgId: org.id }));
+
+  return (
+    <ul>
+      {events.map((event) => (
+        <li key={event.id}>
+          <h2>{event.name}</h2>
+          <p>
+            {event.startsAt.toLocaleString()}
+            {event.endsAt ? ` - ${event.endsAt.toLocaleString()}` : ""}
+          </p>
+          <p>{event.description}</p>
+          <p>{event.location}</p>
+          <ul>
+            {event.attendance.map((attendance) => (
+              <li key={attendance.userId}>
+                {attendance.userName}
+                {attendance.status}
+              </li>
+            ))}
+          </ul>
+          <p>Created by {event.createdBy.name}</p>
+        </li>
+      ))}
+    </ul>
+  );
+}
