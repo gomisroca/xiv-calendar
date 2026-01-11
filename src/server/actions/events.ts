@@ -80,64 +80,39 @@ export async function createEvent(
         },
       });
 
-      await fetch(
-        `https://discord.com/api/v10/channels/899337124548059167/messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      const embedPayload = {
+        username: "EventBot",
+        avatar_url: "https://i.imgur.com/AfFp7pu.png",
+        content: `React to RSVP for **${event.name}**!`,
+        embeds: [
+          {
+            title: event.name,
+            description: description ?? "No description provided",
+            color: 0x00ff00,
+            fields: [
+              {
+                name: "Starts",
+                value: startsAt.toLocaleString(),
+                inline: true,
+              },
+              {
+                name: "Ends",
+                value: endsAt?.toLocaleString() ?? "N/A",
+                inline: true,
+              },
+              { name: "Location", value: location ?? "N/A", inline: false },
+              { name: "Created by", value: event.createdBy.name, inline: true },
+            ],
+            timestamp: new Date().toISOString(),
           },
-          body: JSON.stringify({
-            content: `React to RSVP for **${event.name}**!`,
-            embeds: [
-              {
-                title: event.name,
-                description: description ?? "No description provided",
-                color: 0x00ff00,
-                fields: [
-                  {
-                    name: "Starts",
-                    value: startsAt.toLocaleString(),
-                    inline: true,
-                  },
-                  {
-                    name: "Ends",
-                    value: endsAt?.toLocaleString() ?? "N/A",
-                    inline: true,
-                  },
-                  { name: "Location", value: location ?? "N/A", inline: false },
-                  {
-                    name: "Created by",
-                    value: event.createdBy.name,
-                    inline: true,
-                  },
-                ],
-                timestamp: new Date().toISOString(),
-              },
-            ],
-            components: [
-              {
-                type: 1, // Action Row
-                components: [
-                  {
-                    type: 2, // Button
-                    label: "✅ Attend",
-                    style: 3, // Green button
-                    custom_id: `rsvp_attend_${event.id}`,
-                  },
-                  {
-                    type: 2,
-                    label: "❌ Not attending",
-                    style: 4, // Red button
-                    custom_id: `rsvp_decline_${event.id}`,
-                  },
-                ],
-              },
-            ],
-          }),
-        },
-      );
+        ],
+      };
+
+      await fetch(env.DISCORD_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(embedPayload),
+      });
     });
 
     return {
