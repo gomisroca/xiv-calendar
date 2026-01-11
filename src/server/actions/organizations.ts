@@ -6,7 +6,7 @@ import { auth } from "@/server/auth";
 import { Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 
-const OrganizationSchema = z.object({
+const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
 });
 
@@ -38,7 +38,7 @@ export async function createOrganization(
     };
   }
 
-  const parsed = OrganizationSchema.safeParse(input);
+  const parsed = CreateOrganizationSchema.safeParse(input);
   if (!parsed.success) {
     return {
       success: false,
