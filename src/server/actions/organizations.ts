@@ -3,105 +3,118 @@
 import { z } from "zod";
 import { db } from "@/server/db";
 import { auth } from "@/server/auth";
-import { Permission, Prisma } from "generated/prisma";
-import { AppError } from "@/utils/errors";
+import { Permission } from "generated/prisma";
+import type { ActionResult } from "@/utils/actions";
 
-// --------------------
-// Zod schema
-// --------------------
 const OrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
 });
 
-// --------------------
-// Helper to generate a clean slug
-// --------------------
-function generateSlug(name: string) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
+async function generateSlug(base: string) {
+  let slug = base;
+  let counter = 1;
+
+  while (true) {
+    const exists = await db.organization.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+
+    if (!exists) return slug;
+
+    slug = `${base}-${counter++}`;
+  }
 }
 
-export async function createOrganization(input: unknown) {
+export async function createOrganization(
+  input: unknown,
+): Promise<ActionResult<string>> {
   const session = await auth();
-  if (!session?.user)
-    throw new AppError("You must be signed in", "UNAUTHORIZED");
+  if (!session?.user) {
+    return {
+      success: false,
+      error: "You must be signed in",
+      code: "UNAUTHORIZED",
+    };
+  }
 
-  const { name } = OrganizationSchema.parse(input);
+  const parsed = OrganizationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+      code: "VALIDATION",
+    };
+  }
 
-  return await db.$transaction(async (trx) => {
-    const slugBase = generateSlug(name);
-    let slug = slugBase;
-    let counter = 1;
+  const { name } = parsed.data;
 
-    while (true) {
-      try {
-        const org = await trx.organization.create({
-          data: { name, slug },
-        });
+  try {
+    const slugBase = name.toLowerCase().trim().replace(/\s+/g, "-");
 
-        const adminRole = await trx.role.create({
-          data: {
-            name: "admin",
-            orgId: org.id,
-            permissions: [
-              Permission.CREATE_EVENT,
-              Permission.EDIT_EVENT,
-              Permission.DELETE_EVENT,
-              Permission.MANAGE_MEMBERS,
-            ],
-          },
-        });
+    const slug = await generateSlug(slugBase);
 
-        await trx.membership.create({
-          data: {
-            userId: session.user.id,
-            orgId: org.id,
-            roleOrgId: org.id,
-            roleName: adminRole.name,
-          },
-        });
+    await db.$transaction(async (trx) => {
+      const org = await trx.organization.create({
+        data: { name, slug },
+      });
 
-        return { success: true, message: `Organization "${name}" created.` };
-      } catch (err: unknown) {
-        if (err instanceof Prisma.PrismaClientKnownRequestError) {
-          if (err.code === "P2002") {
-            const target = (err.meta as { target: string[] })?.target ?? [];
-            if (target.includes("slug")) {
-              slug = `${slugBase}-${counter++}`;
-            } else if (target.includes("name")) {
-              throw new AppError(
-                `Organization "${name}" already exists.`,
-                "DUPLICATE",
-              );
-            } else {
-              throw new AppError(
-                "Failed to create organization due to DB constraint.",
-                "UNKNOWN",
-              );
-            }
-          } else {
-            throw new AppError("Failed to create organization.", "UNKNOWN");
-          }
-        } else {
-          console.error(err);
-          throw new AppError("Failed to create organization.", "UNKNOWN");
-        }
-      }
-    }
-  });
+      const adminRole = await trx.role.create({
+        data: {
+          name: "admin",
+          orgId: org.id,
+          permissions: [
+            Permission.CREATE_EVENT,
+            Permission.EDIT_EVENT,
+            Permission.DELETE_EVENT,
+            Permission.MANAGE_MEMBERS,
+          ],
+        },
+      });
+
+      await trx.membership.create({
+        data: {
+          userId: session.user.id,
+          orgId: org.id,
+          roleOrgId: org.id,
+          roleName: adminRole.name,
+        },
+      });
+    });
+
+    return {
+      success: true,
+      data: `Organization "${name}" created.`,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to create organization",
+      code: "UNKNOWN",
+    };
+  }
 }
 
-export async function getUserOrganizations() {
+export type OrganizationWithRole = {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  permissions: Permission[];
+};
+
+export async function getUserOrganizations(): Promise<
+  ActionResult<OrganizationWithRole[]>
+> {
   const session = await auth();
 
   if (!session?.user) {
-    throw new AppError(
-      "You must be signed in to get your organizations",
-      "UNAUTHORIZED",
-    );
+    return {
+      success: false,
+      error: "You must be signed in",
+      code: "UNAUTHORIZED",
+    };
   }
 
   try {
@@ -119,21 +132,30 @@ export async function getUserOrganizations() {
       },
     });
 
-    return organizations;
+    const mapped: OrganizationWithRole[] = organizations.map((org) => {
+      if (!org.memberships.length) {
+        throw new Error("Invariant: user has no membership");
+      }
+
+      return {
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        role: org.memberships[0]!.role.name,
+        permissions: org.memberships[0]!.role.permissions,
+      };
+    });
+
+    return {
+      success: true,
+      data: mapped,
+    };
   } catch (err: unknown) {
-    console.error("Error fetching user organizations:", err);
-    throw new AppError("Failed to fetch your organizations.", "UNKNOWN");
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to get organizations",
+      code: "UNKNOWN",
+    };
   }
 }
-
-// Example Usage
-// try {
-//   await createOrganization(formData);
-//   setMessage({ content: "Organization created!" });
-// } catch (err: any) {
-//   if (err instanceof AppError) {
-//     setMessage({ content: err.message, error: true });
-//   } else {
-//     setMessage({ content: "Unexpected error", error: true });
-//   }
-// }

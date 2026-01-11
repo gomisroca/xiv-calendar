@@ -1,7 +1,6 @@
 "use client";
 
 import { createOrganization } from "@/server/actions/organizations";
-import { AppError } from "@/utils/errors";
 import { useState } from "react";
 
 export default function CreateOrganizationForm() {
@@ -13,31 +12,35 @@ export default function CreateOrganizationForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    const form = e.currentTarget;
     setMessage(null);
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
     const name = (formData.get("name") as string)?.trim();
 
-    try {
-      const res = await createOrganization({ name });
-      setMessage({ content: res.message });
-      e.currentTarget.reset();
-    } catch (err: unknown) {
-      if (err instanceof AppError) {
-        setMessage({ content: err.message, error: true });
-      } else {
-        setMessage({ content: "Unexpected error", error: true });
-      }
-    } finally {
-      setLoading(false);
+    const result = await createOrganization({ name });
+
+    if (!result.success) {
+      setMessage({
+        content: result.error,
+        error: true,
+      });
+    } else {
+      setMessage({
+        content: result.data,
+      });
+      form.reset();
     }
+
+    setLoading(false);
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto max-w-md space-y-4 rounded bg-white p-4 shadow"
+      className="mx-auto max-w-md space-y-4 rounded bg-black/40 p-4 shadow"
     >
       <div>
         <label htmlFor="name" className="mb-1 block font-medium">
