@@ -3,6 +3,7 @@ import { unwrap } from "@/utils/actions";
 import { notFound } from "next/navigation";
 import RSVPButtons from "./rsvp-buttons";
 import { auth } from "@/server/auth";
+import { maskAttendance } from "@/utils/eventStatus";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
@@ -26,7 +27,7 @@ export default async function EventId({ params }: { params: Params }) {
         {event.attendance.map((attendance) => (
           <li key={attendance.userId}>
             {attendance.userName}
-            {attendance.status}
+            {maskAttendance(attendance.status)}
           </li>
         ))}
       </ul>
