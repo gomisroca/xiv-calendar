@@ -13,6 +13,8 @@ jobs:
       DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
       DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }} # TO BE REMOVED
+      BOT_SECRET: ${{ secrets.BOT_SECRET }}
+      BOT_URL: ${{ secrets.BOT_URL }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
     steps:
