@@ -6,12 +6,14 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import type { EventWithAttendance } from "@/server/actions/events";
+import { redirect } from "next/navigation";
 
 interface CalendarProps {
+  slug: string;
   events: EventWithAttendance[];
 }
 
-export default function Calendar({ events }: CalendarProps) {
+export default function Calendar({ slug, events }: CalendarProps) {
   const fcEvents: EventInput[] = events.map((e) => ({
     id: e.id,
     title: e.name,
@@ -37,10 +39,7 @@ export default function Calendar({ events }: CalendarProps) {
         right: "dayGridMonth,timeGridWeek,timeGridDay",
       }}
       eventClick={(info) => {
-        const { title, extendedProps } = info.event;
-        alert(
-          `Event: ${title}\nLocation: ${extendedProps.location}\nDescription: ${extendedProps.description}`,
-        );
+        redirect(`/orgs/${slug}/${info.event.id}`);
       }}
     />
   );

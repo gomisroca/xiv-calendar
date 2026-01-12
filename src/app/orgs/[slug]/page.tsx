@@ -41,7 +41,7 @@ export default async function OrgView({ params }: { params: Params }) {
           </li>
         ))}
       </ul>
-      <Calendar events={events} />
+      <Calendar slug={slug} events={events} />
     </>
   );
 }

@@ -265,3 +265,161 @@ export async function getOrganizationEvents({
     };
   }
 }
+
+export async function getSingleEvent({
+  eventId,
+}: {
+  eventId: string;
+}): Promise<ActionResult<EventWithAttendance>> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      success: false,
+      error: "You must be signed in",
+      code: "UNAUTHORIZED",
+    };
+  }
+
+  try {
+    const event = await db.event.findUnique({
+      where: {
+        id: eventId,
+      },
+      include: {
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        eventAttendances: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+            status: true,
+          },
+        },
+      },
+    });
+    if (!event) {
+      return {
+        success: false,
+        error: "Event not found",
+        code: "NOT_FOUND",
+      };
+    }
+
+    const mapped: EventWithAttendance = {
+      id: event.id,
+      name: event.name,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      description: event.description,
+      location: event.location,
+      attendance: event.eventAttendances.map((attendance) => {
+        return {
+          userId: attendance.userId,
+          userName: attendance.user.name,
+          status: attendance.status,
+        };
+      }),
+      createdBy: {
+        id: event.createdBy.id,
+        name: event.createdBy.name,
+      },
+    };
+
+    return {
+      success: true,
+      data: mapped,
+    };
+  } catch (err: unknown) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to get event",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+const RSVPEventSchema = z.object({
+  eventId: z.string().cuid(),
+  status: z.enum([EventStatus.ATTENDING, EventStatus.NOT_ATTENDING]),
+});
+
+export async function rsvpToEvent(
+  input: unknown,
+): Promise<ActionResult<{ status: EventStatus }>> {
+  const session = await auth();
+  if (!session?.user) {
+    return {
+      success: false,
+      error: "You must be signed in",
+      code: "UNAUTHORIZED",
+    };
+  }
+
+  const parsed = RSVPEventSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+      code: "VALIDATION",
+    };
+  }
+
+  const { eventId, status } = parsed.data;
+
+  try {
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      include: { org: { include: { memberships: true } } },
+    });
+
+    if (!event) {
+      return { success: false, error: "Event not found", code: "NOT_FOUND" };
+    }
+
+    const isMember = event.org.memberships.some(
+      (m) => m.userId === session.user.id,
+    );
+
+    if (!isMember) {
+      return {
+        success: false,
+        error: "You must belong to the organization to RSVP",
+        code: "FORBIDDEN",
+      };
+    }
+
+    await db.eventAttendance.upsert({
+      where: {
+        eventId_userId: {
+          eventId,
+          userId: session.user.id,
+        },
+      },
+      update: { status },
+      create: {
+        eventId,
+        userId: session.user.id,
+        status,
+      },
+    });
+
+    return { success: true, data: { status } };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to RSVP",
+      code: "UNKNOWN",
+    };
+  }
+}
