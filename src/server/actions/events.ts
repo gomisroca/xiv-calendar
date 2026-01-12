@@ -17,6 +17,11 @@ const CreateEventSchema = z.object({
   location: z.string().optional(),
 });
 
+const DiscordWebhookMessageSchema = z.object({
+  id: z.string(),
+  channel_id: z.string(),
+});
+
 export async function createEvent(
   input: unknown,
 ): Promise<ActionResult<string>> {
@@ -108,10 +113,26 @@ export async function createEvent(
         ],
       };
 
-      await fetch(env.DISCORD_WEBHOOK_URL, {
+      const webhookRes = await fetch(`${env.DISCORD_WEBHOOK_URL}?wait=true`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(embedPayload),
+      });
+
+      const webhookMessage = DiscordWebhookMessageSchema.parse(
+        await webhookRes.json(),
+      );
+
+      await fetch(`${env.BOT_URL}/add-reactions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bot-secret": env.BOT_SECRET,
+        },
+        body: JSON.stringify({
+          channelId: webhookMessage.channel_id,
+          messageId: webhookMessage.id,
+        }),
       });
     });
 
