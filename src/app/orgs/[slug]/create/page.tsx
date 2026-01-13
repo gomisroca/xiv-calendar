@@ -8,7 +8,6 @@ export default async function CreateEventPage({ params }: { params: Params }) {
 
   const org = await db.organization.findUnique({
     where: { slug },
-    select: { id: true, name: true },
   });
 
   if (!org) notFound();
@@ -16,7 +15,7 @@ export default async function CreateEventPage({ params }: { params: Params }) {
   return (
     <div className="mx-auto mt-8 max-w-md">
       <h1 className="mb-4 text-2xl font-bold">Create Event for {org.name}</h1>
-      <CreateEventForm orgId={org.id} />
+      <CreateEventForm org={org} />
     </div>
   );
 }

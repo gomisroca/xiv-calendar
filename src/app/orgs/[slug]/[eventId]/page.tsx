@@ -3,7 +3,7 @@ import { unwrap } from "@/utils/actions";
 import { notFound } from "next/navigation";
 import RSVPButtons from "./rsvp-buttons";
 import { auth } from "@/server/auth";
-import { maskAttendance } from "@/utils/eventStatus";
+import { maskAttendance } from "@/utils/events";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {

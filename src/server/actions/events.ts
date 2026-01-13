@@ -7,19 +7,16 @@ import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 import { requirePermission } from "../auth/permissions";
 import { env } from "@/env";
+import { computeAttendanceSummary, renderEventEmbed } from "@/utils/events";
 
 const CreateEventSchema = z.object({
-  orgId: z.string().cuid(),
+  orgId: z.string(),
+  discordChannelId: z.string(),
   name: z.string().min(1, "Event name is required"),
   startsAt: z.coerce.date(),
   endsAt: z.coerce.date().optional(),
   description: z.string().optional(),
   location: z.string().optional(),
-});
-
-const DiscordWebhookMessageSchema = z.object({
-  id: z.string(),
-  channel_id: z.string(),
 });
 
 export async function createEvent(
@@ -43,7 +40,15 @@ export async function createEvent(
     };
   }
 
-  const { orgId, name, startsAt, endsAt, description, location } = parsed.data;
+  const {
+    orgId,
+    discordChannelId,
+    name,
+    startsAt,
+    endsAt,
+    description,
+    location,
+  } = parsed.data;
 
   const permissions = await requirePermission({
     userId: session.user.id,
@@ -63,7 +68,7 @@ export async function createEvent(
   }
 
   try {
-    await db.$transaction(async (trx) => {
+    const event = await db.$transaction(async (trx) => {
       const event = await trx.event.create({
         data: {
           name,
@@ -74,7 +79,6 @@ export async function createEvent(
           description,
           location,
         },
-        include: { createdBy: { select: { name: true } } },
       });
 
       await trx.eventAttendance.create({
@@ -85,55 +89,77 @@ export async function createEvent(
         },
       });
 
-      const embedPayload = {
-        username: "EventBot",
-        avatar_url: "https://i.imgur.com/AfFp7pu.png",
-        content: `React to RSVP for **${event.name}**!`,
-        embeds: [
-          {
-            title: event.name,
-            description: description ?? "No description provided",
-            color: 0x00ff00,
-            fields: [
-              {
-                name: "Starts",
-                value: startsAt.toLocaleString(),
-                inline: true,
-              },
-              {
-                name: "Ends",
-                value: endsAt?.toLocaleString() ?? "N/A",
-                inline: true,
-              },
-              { name: "Location", value: location ?? "N/A", inline: false },
-              { name: "Created by", value: event.createdBy.name, inline: true },
-            ],
-            timestamp: new Date().toISOString(),
+      return event;
+    });
+
+    const fullEvent = await db.event.findUnique({
+      where: { id: event.id },
+      include: {
+        createdBy: { select: { id: true, name: true } },
+        eventAttendances: {
+          include: {
+            user: { select: { id: true, name: true } },
           },
-        ],
-      };
-
-      const webhookRes = await fetch(`${env.DISCORD_WEBHOOK_URL}?wait=true`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(embedPayload),
-      });
-
-      const webhookMessage = DiscordWebhookMessageSchema.parse(
-        await webhookRes.json(),
-      );
-
-      await fetch(`${env.BOT_URL}/add-reactions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-bot-secret": env.BOT_SECRET,
         },
-        body: JSON.stringify({
-          channelId: webhookMessage.channel_id,
-          messageId: webhookMessage.id,
-        }),
-      });
+      },
+    });
+    if (!fullEvent) return { success: false, error: "Failed to create event" };
+
+    const rawAttendances = fullEvent.eventAttendances.map((a) => ({
+      status: a.status,
+      user: {
+        name: a.user.name,
+      },
+    }));
+    const attendanceSummary = computeAttendanceSummary(rawAttendances);
+
+    const eventForDiscord = {
+      id: fullEvent.id,
+      name: fullEvent.name,
+      description: fullEvent.description,
+      location: fullEvent.location,
+      startsAt: fullEvent.startsAt,
+      endsAt: fullEvent.endsAt,
+      createdByName: fullEvent.createdBy.name,
+      attendance: attendanceSummary,
+    };
+
+    const embed = renderEventEmbed(eventForDiscord);
+
+    type PostEventResponse = {
+      channelId: string;
+      messageId: string;
+    };
+
+    const botRes = await fetch(`${env.BOT_URL}/update-event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": env.BOT_SECRET,
+      },
+      body: JSON.stringify({
+        channelId: discordChannelId,
+        eventId: event.id,
+        embed,
+      }),
+    });
+
+    console.log(botRes);
+
+    if (!botRes.ok) {
+      throw new Error("Failed to post event to Discord");
+    }
+
+    const { channelId, messageId } = (await botRes.json()) as PostEventResponse;
+
+    console.log(channelId, messageId);
+
+    await db.event.update({
+      where: { id: event.id },
+      data: {
+        discordChannelId: channelId,
+        discordMessageId: messageId,
+      },
     });
 
     return {
@@ -379,12 +405,42 @@ export async function rsvpToEvent(
   try {
     const event = await db.event.findUnique({
       where: { id: eventId },
-      include: { org: { include: { memberships: true } } },
+      include: {
+        org: { include: { memberships: true } },
+        createdBy: { select: { id: true, name: true } },
+        eventAttendances: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
+      },
     });
 
     if (!event) {
       return { success: false, error: "Event not found", code: "NOT_FOUND" };
     }
+
+    const rawAttendances = event.eventAttendances.map((a) => ({
+      status: a.status,
+      user: {
+        name: a.user.name,
+      },
+    }));
+
+    const attendanceSummary = computeAttendanceSummary(rawAttendances);
+
+    const eventForDiscord = {
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      createdByName: event.createdBy.name,
+      attendance: attendanceSummary,
+    };
+
+    const embed = renderEventEmbed(eventForDiscord);
 
     const isMember = event.org.memberships.some(
       (m) => m.userId === session.user.id,
@@ -412,6 +468,22 @@ export async function rsvpToEvent(
         status,
       },
     });
+
+    if (event.discordMessageId && event.discordChannelId) {
+      await fetch(`${env.BOT_URL}/update-event`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bot-secret": env.BOT_SECRET,
+        },
+        body: JSON.stringify({
+          channelId: event.discordChannelId,
+          messageId: event.discordMessageId,
+          eventId: event.id,
+          embed,
+        }),
+      });
+    }
 
     return { success: true, data: { status } };
   } catch (err) {

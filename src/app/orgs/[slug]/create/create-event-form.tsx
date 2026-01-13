@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { createEvent } from "@/server/actions/events";
 import { unwrap } from "@/utils/actions";
+import type { Organization } from "generated/prisma";
 
 interface CreateEventFormProps {
-  orgId: string;
+  org: Organization;
 }
 
-export function CreateEventForm({ orgId }: CreateEventFormProps) {
+export function CreateEventForm({ org }: CreateEventFormProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -26,7 +27,8 @@ export function CreateEventForm({ orgId }: CreateEventFormProps) {
 
     try {
       const result = await createEvent({
-        orgId,
+        orgId: org.id,
+        discordChannelId: org.discordChannelId,
         name: title,
         startsAt: new Date(startsAt),
         endsAt: endsAt ? new Date(endsAt) : undefined,
