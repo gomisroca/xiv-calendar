@@ -63,15 +63,15 @@ model VerificationToken {
 }
 
 model Organization {
-  id          String       @id @default(cuid())
-  name        String
-  slug        String       @unique
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now()) @updatedAt
-  webhookUrl  String?
-  roles       Role[]
-  memberships Membership[]
-  events      Event[]
+  id               String       @id @default(cuid())
+  name             String
+  slug             String       @unique
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @default(now()) @updatedAt
+  discordChannelId String
+  roles            Role[]
+  memberships      Membership[]
+  events           Event[]
 
   @@map("organization")
 }
@@ -126,6 +126,9 @@ model Event {
   createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdById String
 
+  discordMessageId String?
+  discordChannelId String?
+
   orgId            String
   org              Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
   eventAttendances EventAttendance[]
@@ -135,6 +138,7 @@ enum EventStatus {
   ATTENDING
   NOT_ATTENDING
   PENDING
+  MAYBE
 }
 
 model EventAttendance {
