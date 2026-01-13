@@ -403,57 +403,6 @@ export async function rsvpToEvent(
   const { eventId, status } = parsed.data;
 
   try {
-    const event = await db.event.findUnique({
-      where: { id: eventId },
-      include: {
-        org: { include: { memberships: true } },
-        createdBy: { select: { id: true, name: true } },
-        eventAttendances: {
-          include: {
-            user: { select: { id: true, name: true } },
-          },
-        },
-      },
-    });
-
-    if (!event) {
-      return { success: false, error: "Event not found", code: "NOT_FOUND" };
-    }
-
-    const rawAttendances = event.eventAttendances.map((a) => ({
-      status: a.status,
-      user: {
-        name: a.user.name,
-      },
-    }));
-
-    const attendanceSummary = computeAttendanceSummary(rawAttendances);
-
-    const eventForDiscord = {
-      id: event.id,
-      name: event.name,
-      description: event.description,
-      location: event.location,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      createdByName: event.createdBy.name,
-      attendance: attendanceSummary,
-    };
-
-    const embed = renderEventEmbed(eventForDiscord);
-
-    const isMember = event.org.memberships.some(
-      (m) => m.userId === session.user.id,
-    );
-
-    if (!isMember) {
-      return {
-        success: false,
-        error: "You must belong to the organization to RSVP",
-        code: "FORBIDDEN",
-      };
-    }
-
     await db.eventAttendance.upsert({
       where: {
         eventId_userId: {
@@ -468,6 +417,40 @@ export async function rsvpToEvent(
         status,
       },
     });
+
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      include: {
+        createdBy: { select: { name: true } },
+        eventAttendances: {
+          include: { user: { select: { name: true } } },
+        },
+        org: { include: { memberships: true } },
+      },
+    });
+    if (!event) {
+      return { success: false, error: "Event not found", code: "NOT_FOUND" };
+    }
+
+    const attendanceSummary = computeAttendanceSummary(
+      event.eventAttendances.map((a) => ({
+        status: a.status,
+        user: { name: a.user.name },
+      })),
+    );
+
+    const eventForDiscord = {
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      createdByName: event.createdBy.name,
+      attendance: attendanceSummary,
+    };
+
+    const embed = renderEventEmbed(eventForDiscord);
 
     if (event.discordMessageId && event.discordChannelId) {
       await fetch(`${env.BOT_URL}/update-event`, {
