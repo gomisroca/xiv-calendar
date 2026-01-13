@@ -5,7 +5,7 @@ import { env } from "@/env";
 import { z } from "zod";
 
 const DiscordRSVPSchema = z.object({
-  discordMessageId: z.string(),
+  eventId: z.string(),
   discordUserId: z.string(),
   emoji: z.enum(["✅", "❌"]),
 });
@@ -25,9 +25,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { discordMessageId, discordUserId, emoji } = parsed.data;
+  const { eventId, discordUserId, emoji } = parsed.data;
 
-  if (!discordMessageId || !discordUserId || !emoji) {
+  if (!eventId || !discordUserId || !emoji) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 },
@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Find event
-  const event = await db.event.findFirst({
-    where: { discordMessageId },
+  const event = await db.event.findUnique({
+    where: { id: eventId },
     include: {
       org: true,
     },
