@@ -19,8 +19,11 @@ export default function CreateOrganizationForm() {
 
     const formData = new FormData(form);
     const name = (formData.get("name") as string)?.trim();
+    const discordChannelId = (
+      formData.get("discordChannelId") as string
+    )?.trim();
 
-    const result = await createOrganization({ name });
+    const result = await createOrganization({ name, discordChannelId });
 
     if (!result.success) {
       setMessage({
@@ -50,6 +53,19 @@ export default function CreateOrganizationForm() {
           type="text"
           id="name"
           name="name"
+          required
+          className="w-full rounded border px-3 py-2 focus:border-blue-300 focus:ring focus:outline-none"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="discordChannelId" className="mb-1 block font-medium">
+          Discord Channel ID
+        </label>
+        <input
+          type="text"
+          id="discordChannelId"
+          name="discordChannelId"
           required
           className="w-full rounded border px-3 py-2 focus:border-blue-300 focus:ring focus:outline-none"
         />

@@ -8,6 +8,7 @@ import type { ActionResult } from "@/utils/actions";
 
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
+  discordChannelId: z.string().min(1, "Discord channel ID is required"),
 });
 
 async function generateSlug(base: string) {
@@ -47,7 +48,7 @@ export async function createOrganization(
     };
   }
 
-  const { name } = parsed.data;
+  const { name, discordChannelId } = parsed.data;
 
   try {
     const slugBase = name.toLowerCase().trim().replace(/\s+/g, "-");
@@ -56,7 +57,7 @@ export async function createOrganization(
 
     await db.$transaction(async (trx) => {
       const org = await trx.organization.create({
-        data: { name, slug },
+        data: { name, slug, discordChannelId },
       });
 
       const adminRole = await trx.role.create({
