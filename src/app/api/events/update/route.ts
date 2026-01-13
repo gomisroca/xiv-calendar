@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { EventStatus } from "generated/prisma";
 import { env } from "@/env";
 import { z } from "zod";
+import { computeAttendanceSummary, renderEventEmbed } from "@/utils/events";
 
 const DiscordRSVPSchema = z.object({
   eventId: z.string(),
@@ -15,7 +16,6 @@ const DiscordRSVPSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  // 1. Authenticate bot
   if (req.headers.get("x-bot-secret") !== env.BOT_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -38,11 +38,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Find event
   const event = await db.event.findUnique({
     where: { id: eventId },
     include: {
-      org: true,
+      org: { include: { memberships: true } },
+      createdBy: { select: { name: true } },
+      eventAttendances: { include: { user: { select: { name: true } } } },
     },
   });
 
@@ -50,7 +51,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
-  // 3. Find user account
   const account = await db.account.findFirst({
     where: { providerAccountId: discordUserId },
   });
@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User not linked" }, { status: 404 });
   }
 
-  // 4. Update RSVP
   await db.eventAttendance.upsert({
     where: {
       eventId_userId: {
@@ -75,17 +74,52 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // 5. Ask bot to re-render Discord message
-  await fetch(`${env.BOT_URL}/update-event`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-bot-secret": env.BOT_SECRET,
+  const updatedEvent = await db.event.findUnique({
+    where: { id: eventId },
+    include: {
+      createdBy: { select: { name: true } },
+      eventAttendances: { include: { user: { select: { name: true } } } },
     },
-    body: JSON.stringify({
-      eventId: event.id,
-    }),
   });
+
+  if (!updatedEvent)
+    return NextResponse.json({ error: "Event not found" }, { status: 404 });
+
+  const attendanceSummary = computeAttendanceSummary(
+    updatedEvent.eventAttendances.map((a) => ({
+      status: a.status,
+      user: { name: a.user.name },
+    })),
+  );
+
+  const eventForDiscord = {
+    id: updatedEvent.id,
+    name: updatedEvent.name,
+    description: updatedEvent.description,
+    location: updatedEvent.location,
+    startsAt: updatedEvent.startsAt,
+    endsAt: updatedEvent.endsAt,
+    createdByName: updatedEvent.createdBy.name,
+    attendance: attendanceSummary,
+  };
+
+  const embed = renderEventEmbed(eventForDiscord);
+
+  if (event.discordMessageId && event.discordChannelId) {
+    await fetch(`${env.BOT_URL}/update-event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": env.BOT_SECRET,
+      },
+      body: JSON.stringify({
+        channelId: event.discordChannelId,
+        messageId: event.discordMessageId,
+        eventId: event.id,
+        embed,
+      }),
+    });
+  }
 
   return NextResponse.json({ success: true });
 }
