@@ -7,7 +7,11 @@ import { z } from "zod";
 const DiscordRSVPSchema = z.object({
   eventId: z.string(),
   discordUserId: z.string(),
-  emoji: z.enum(["✅", "❌"]),
+  status: z.enum([
+    EventStatus.ATTENDING,
+    EventStatus.NOT_ATTENDING,
+    EventStatus.MAYBE,
+  ]),
 });
 
 export async function POST(req: NextRequest) {
@@ -25,24 +29,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { eventId, discordUserId, emoji } = parsed.data;
+  const { eventId, discordUserId, status } = parsed.data;
 
-  if (!eventId || !discordUserId || !emoji) {
+  if (!eventId || !discordUserId || !status) {
     return NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 },
     );
-  }
-
-  const status =
-    emoji === "✅"
-      ? EventStatus.ATTENDING
-      : emoji === "❌"
-        ? EventStatus.NOT_ATTENDING
-        : null;
-
-  if (!status) {
-    return NextResponse.json({ error: "Invalid emoji" }, { status: 400 });
   }
 
   // 2. Find event
