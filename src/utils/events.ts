@@ -1,5 +1,7 @@
 import { EventStatus } from "generated/prisma";
 
+export const RATE_LIMIT_MS = 2000; // 2 seconds
+
 export const attendanceMask: Record<EventStatus, string> = {
   [EventStatus.ATTENDING]: "✅ Attending",
   [EventStatus.NOT_ATTENDING]: "❌ Not Attending",

@@ -150,5 +150,8 @@ model EventAttendance {
 
   status EventStatus @default(PENDING)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   @@id([eventId, userId])
 }

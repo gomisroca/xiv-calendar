@@ -7,7 +7,11 @@ import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 import { requirePermission } from "../auth/permissions";
 import { env } from "@/env";
-import { computeAttendanceSummary, renderEventEmbed } from "@/utils/events";
+import {
+  computeAttendanceSummary,
+  RATE_LIMIT_MS,
+  renderEventEmbed,
+} from "@/utils/events";
 
 const CreateEventSchema = z.object({
   orgId: z.string(),
@@ -413,8 +417,17 @@ export async function rsvpToEvent(
       },
     });
 
-    if (existing?.status === status) {
-      return { success: true, data: { status } };
+    if (existing) {
+      if (existing.status === status) {
+        return { success: true, data: { status } };
+      }
+
+      if (Date.now() - existing.updatedAt.getTime() < RATE_LIMIT_MS) {
+        return {
+          success: true,
+          data: { status: existing.status },
+        };
+      }
     }
 
     await db.eventAttendance.upsert({

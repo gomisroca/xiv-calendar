@@ -3,7 +3,11 @@ import { db } from "@/server/db";
 import { EventStatus } from "generated/prisma";
 import { env } from "@/env";
 import { z } from "zod";
-import { computeAttendanceSummary, renderEventEmbed } from "@/utils/events";
+import {
+  computeAttendanceSummary,
+  RATE_LIMIT_MS,
+  renderEventEmbed,
+} from "@/utils/events";
 
 const DiscordRSVPSchema = z.object({
   eventId: z.string(),
@@ -68,8 +72,14 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  if (existing?.status === status) {
-    return NextResponse.json({ success: true });
+  if (existing) {
+    if (existing.status === status) {
+      return NextResponse.json({ success: true });
+    }
+
+    if (Date.now() - existing.updatedAt.getTime() < RATE_LIMIT_MS) {
+      return NextResponse.json({ success: true });
+    }
   }
 
   await db.eventAttendance.upsert({
