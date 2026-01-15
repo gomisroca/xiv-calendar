@@ -24,20 +24,31 @@ const RSVP_OPTIONS: {
   icon: string;
   label: string;
 }[] = [
-  { value: EventStatus.ATTENDING, icon: "✅", label: "Attend" },
+  { value: EventStatus.ATTENDING, icon: "✅", label: "Attending" },
   { value: EventStatus.MAYBE, icon: "❓", label: "Maybe" },
   { value: EventStatus.NOT_ATTENDING, icon: "❌", label: "Not attending" },
 ];
 
 const base =
-  "rounded px-3 py-1 transition disabled:opacity-50 disabled:cursor-not-allowed";
+  "rounded px-3 py-1 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-black font-semibold tracking-wider";
 
-const styles: Record<EventStatus | "inactive", string> = {
-  ATTENDING: "bg-green-500 text-white",
-  NOT_ATTENDING: "bg-red-500 text-white",
-  MAYBE: "bg-yellow-500 text-white",
-  PENDING: "bg-gray-200 hover:bg-gray-300",
-  inactive: "bg-gray-200 hover:bg-gray-300",
+const styles: Record<EventStatus, { active: string; inactive: string }> = {
+  ATTENDING: {
+    active: "bg-green-200",
+    inactive: "bg-green-500 hover:bg-green-600",
+  },
+  NOT_ATTENDING: {
+    active: "bg-red-200",
+    inactive: "bg-red-500 hover:bg-red-600",
+  },
+  MAYBE: {
+    active: "bg-yellow-200",
+    inactive: "bg-yellow-500 hover:bg-yellow-600",
+  },
+  PENDING: {
+    active: "bg-gray-200",
+    inactive: "bg-gray-500 hover:bg-gray-600",
+  },
 };
 
 function RSVPButton({
@@ -53,8 +64,8 @@ function RSVPButton({
   return (
     <button
       type="button"
-      className={`${base} ${isActive ? styles[value] : styles.inactive}`}
-      disabled={disabled}
+      className={`${base} ${isActive ? styles[value].active : styles[value].inactive}`}
+      disabled={disabled ?? isActive}
       onClick={() => onClick(value)}
     >
       {icon} {label}
@@ -102,19 +113,20 @@ export default function RSVPButtons({
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      {RSVP_OPTIONS.map((option) => (
-        <RSVPButton
-          key={option.value}
-          value={option.value}
-          current={status}
-          label={option.label}
-          icon={option.icon}
-          disabled={loading || isPending || isClosed}
-          onClick={handleRSVP}
-        />
-      ))}
-
+    <div className="flex flex-col items-center justify-center space-y-2">
+      <div className="flex items-center space-x-2">
+        {RSVP_OPTIONS.map((option) => (
+          <RSVPButton
+            key={option.value}
+            value={option.value}
+            current={status}
+            label={option.label}
+            icon={option.icon}
+            disabled={loading || isPending || isClosed}
+            onClick={handleRSVP}
+          />
+        ))}
+      </div>
       {loading && (
         <span className="ml-2 text-sm text-gray-500">Updating RSVP…</span>
       )}
