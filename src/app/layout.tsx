@@ -3,9 +3,9 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist } from "next/font/google";
-import ThemeChanger from "./theme-changer";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/server/auth";
+import Navbar from "./_components/ui/navbar";
 
 export const metadata: Metadata = {
   title: "XIV Calendar",
@@ -27,8 +27,7 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b/shorter from-sky-700 from-65% to-indigo-950 text-white dark:from-[#002349] dark:to-[#09002f]">
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
-            {/* TODO: Add a navbar */}
-            <ThemeChanger />
+            <Navbar />
             {children}
           </ThemeProvider>
         </SessionProvider>
