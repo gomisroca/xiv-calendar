@@ -404,6 +404,19 @@ export async function rsvpToEvent(
   const { eventId, status } = parsed.data;
 
   try {
+    const existing = await db.eventAttendance.findUnique({
+      where: {
+        eventId_userId: {
+          eventId,
+          userId: session.user.id,
+        },
+      },
+    });
+
+    if (existing?.status === status) {
+      return { success: true, data: { status } };
+    }
+
     await db.eventAttendance.upsert({
       where: {
         eventId_userId: {

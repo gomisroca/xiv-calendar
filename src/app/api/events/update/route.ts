@@ -59,6 +59,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User not linked" }, { status: 404 });
   }
 
+  const existing = await db.eventAttendance.findUnique({
+    where: {
+      eventId_userId: {
+        eventId,
+        userId: account.userId,
+      },
+    },
+  });
+
+  if (existing?.status === status) {
+    return NextResponse.json({ success: true });
+  }
+
   await db.eventAttendance.upsert({
     where: {
       eventId_userId: {
