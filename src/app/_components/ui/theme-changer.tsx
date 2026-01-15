@@ -15,7 +15,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative flex h-10 w-20 items-center rounded-full bg-gray-200 px-1 transition-colors duration-300 dark:bg-gray-800"
+      className="relative flex h-10 w-20 cursor-pointer items-center rounded-full bg-gray-200 px-1 transition-colors duration-300 dark:bg-gray-800"
     >
       {/* Sun and Moon icons */}
       <span className="absolute left-2 text-yellow-500">🌞</span>

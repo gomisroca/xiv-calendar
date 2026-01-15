@@ -24,7 +24,7 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
-      <body className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b/shorter from-sky-700 from-65% to-indigo-950 text-white dark:from-[#002349] dark:to-[#09002f]">
+      <body className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b/shorter from-sky-700 from-65% to-indigo-950 text-black dark:from-[#002349] dark:to-[#09002f] dark:text-white">
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
             <Navbar />
