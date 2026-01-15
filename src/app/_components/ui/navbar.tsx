@@ -1,12 +1,14 @@
+"use client";
+
 import ThemeToggle from "@/app/_components/ui/theme-changer";
-import { auth, signIn, signOut } from "@/server/auth";
+import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 
-export default async function Navbar() {
-  const session = await auth();
+export default function Navbar() {
+  const session = useSession();
 
   return (
-    <header className="w-full border-b bg-white shadow-sm">
+    <header className="w-full bg-white shadow-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         {/* Logo / site name */}
         <Link href="/" className="text-2xl font-bold text-indigo-600">
@@ -14,8 +16,8 @@ export default async function Navbar() {
         </Link>
 
         {/* Right side: auth */}
-        <div>
-          {session?.user ? (
+        <div className="flex gap-2">
+          {session?.data?.user ? (
             <button
               onClick={() => signOut()}
               className="rounded-lg bg-red-500 px-4 py-2 text-white transition hover:bg-red-400"
@@ -30,8 +32,8 @@ export default async function Navbar() {
               Login with Discord
             </button>
           )}
+          <ThemeToggle />
         </div>
-        <ThemeToggle />
       </div>
     </header>
   );
