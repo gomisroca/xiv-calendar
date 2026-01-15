@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { rsvpToEvent } from "@/server/actions/events";
 import { EventStatus } from "generated/prisma";
-import { useRouter } from "next/navigation";
+import { useRSVP } from "@/hooks/useRSVP";
 
 interface RSVPButtonsProps {
   eventId: string;
@@ -78,39 +76,11 @@ export default function RSVPButtons({
   initialStatus,
   isClosed,
 }: RSVPButtonsProps) {
-  const [status, setStatus] = useState<EventStatus | undefined>(initialStatus);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const [error, setError] = useState<string | null>(null);
-
-  const handleRSVP = async (newStatus: EventStatus) => {
-    if (loading || isPending) return;
-    if (status === newStatus) return;
-
-    setLoading(true);
-    setStatus(newStatus);
-
-    try {
-      const result = await rsvpToEvent({ eventId, status: newStatus });
-      if (!result.success) {
-        throw new Error(result.error || "RSVP failed");
-      }
-
-      startTransition(() => {
-        router.refresh();
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-
-      startTransition(() => {
-        router.refresh();
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { status, updateRSVP, loading, error, canRSVP } = useRSVP({
+    eventId,
+    initialStatus,
+    isClosed,
+  });
 
   return (
     <div className="flex flex-col items-center justify-center space-y-2">
@@ -122,8 +92,8 @@ export default function RSVPButtons({
             current={status}
             label={option.label}
             icon={option.icon}
-            disabled={loading || isPending || isClosed}
-            onClick={handleRSVP}
+            disabled={!canRSVP}
+            onClick={updateRSVP}
           />
         ))}
       </div>
