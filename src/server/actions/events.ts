@@ -381,7 +381,11 @@ export async function getSingleEvent({
 
 const RSVPEventSchema = z.object({
   eventId: z.string().cuid(),
-  status: z.enum([EventStatus.ATTENDING, EventStatus.NOT_ATTENDING]),
+  status: z.enum([
+    EventStatus.ATTENDING,
+    EventStatus.NOT_ATTENDING,
+    EventStatus.MAYBE,
+  ]),
 });
 
 export async function rsvpToEvent(
