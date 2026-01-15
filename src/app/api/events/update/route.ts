@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
         channelId: event.discordChannelId,
         messageId: event.discordMessageId,
         eventId: event.id,
+        eventStartTime: event.startsAt,
         embed,
       }),
     });

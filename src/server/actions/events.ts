@@ -140,6 +140,7 @@ export async function createEvent(
       body: JSON.stringify({
         channelId: discordChannelId,
         eventId: event.id,
+        eventStartTime: event.startsAt,
         embed,
       }),
     });
@@ -463,6 +464,7 @@ export async function rsvpToEvent(
           channelId: event.discordChannelId,
           messageId: event.discordMessageId,
           eventId: event.id,
+          eventStartTime: event.startsAt,
           embed,
         }),
       });
