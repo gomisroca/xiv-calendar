@@ -532,7 +532,13 @@ export type UserEvent = {
   };
 };
 
-export async function getUserEvents(): Promise<ActionResult<UserEvent[]>> {
+export type UserEventsFilter = "ALL" | "UPCOMING" | "PAST";
+
+export async function getUserEvents({
+  filter = "UPCOMING",
+}: {
+  filter?: UserEventsFilter;
+} = {}): Promise<ActionResult<UserEvent[]>> {
   const session = await auth();
 
   if (!session?.user) {
@@ -542,10 +548,19 @@ export async function getUserEvents(): Promise<ActionResult<UserEvent[]>> {
       code: "UNAUTHORIZED",
     };
   }
+  const now = new Date();
+
+  const timeFilter =
+    filter === "UPCOMING"
+      ? { startsAt: { gte: now } }
+      : filter === "PAST"
+        ? { startsAt: { lt: now } }
+        : {};
 
   try {
     const events = await db.event.findMany({
       where: {
+        ...timeFilter,
         org: {
           memberships: {
             some: {
@@ -554,7 +569,9 @@ export async function getUserEvents(): Promise<ActionResult<UserEvent[]>> {
           },
         },
       },
-      orderBy: { startsAt: "asc" },
+      orderBy: {
+        startsAt: filter === "PAST" ? "desc" : "asc",
+      },
       include: {
         org: {
           select: {
