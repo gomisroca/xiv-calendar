@@ -28,7 +28,7 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
             <Navbar />
-            {children}
+            <main className="mt-20">{children}</main>
           </ThemeProvider>
         </SessionProvider>
       </body>
