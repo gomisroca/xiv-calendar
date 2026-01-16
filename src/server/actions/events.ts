@@ -510,3 +510,107 @@ export async function rsvpToEvent(
     };
   }
 }
+
+export type UserEvent = {
+  id: string;
+  name: string;
+  startsAt: Date;
+  endsAt: Date | null;
+  description: string | null;
+  location: string | null;
+
+  organization: {
+    id: string;
+    name: string;
+  };
+
+  myStatus: EventStatus | null;
+  attendanceCounts: {
+    attending: number;
+    maybe: number;
+    notAttending: number;
+  };
+};
+
+export async function getUserEvents(): Promise<ActionResult<UserEvent[]>> {
+  const session = await auth();
+
+  if (!session?.user) {
+    return {
+      success: false,
+      error: "You must be signed in",
+      code: "UNAUTHORIZED",
+    };
+  }
+
+  try {
+    const events = await db.event.findMany({
+      where: {
+        org: {
+          memberships: {
+            some: {
+              userId: session.user.id,
+            },
+          },
+        },
+      },
+      orderBy: { startsAt: "asc" },
+      include: {
+        org: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        eventAttendances: {
+          select: {
+            userId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    const mapped: UserEvent[] = events.map((event) => {
+      const myAttendance = event.eventAttendances.find(
+        (a) => a.userId === session.user.id,
+      );
+
+      const counts = {
+        attending: 0,
+        maybe: 0,
+        notAttending: 0,
+      };
+
+      for (const a of event.eventAttendances) {
+        if (a.status === "ATTENDING") counts.attending++;
+        if (a.status === "MAYBE") counts.maybe++;
+        if (a.status === "NOT_ATTENDING") counts.notAttending++;
+      }
+
+      return {
+        id: event.id,
+        name: event.name,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        description: event.description,
+        location: event.location,
+        organization: event.org,
+        myStatus: myAttendance?.status ?? null,
+        attendanceCounts: counts,
+      };
+    });
+
+    return {
+      success: true,
+      data: mapped,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to load events",
+      code: "UNKNOWN",
+    };
+  }
+}
