@@ -37,7 +37,7 @@ function formatEventDate(date: Date) {
 
 function EmptyDashboard() {
   return (
-    <div className="rounded-xl border bg-white p-8 shadow-sm dark:bg-black">
+    <div className="rounded-xl bg-white p-8 shadow-sm dark:bg-black">
       <h2 className="text-xl font-medium">You don’t have any events yet</h2>
 
       <p className="mt-2 max-w-md text-slate-500">
@@ -62,7 +62,7 @@ function EmptyDashboard() {
 
         <Link
           href="/docs/getting-started"
-          className="rounded-lg border px-5 py-2.5 text-slate-600 hover:bg-slate-50 dark:text-slate-300"
+          className="rounded-lg border px-5 py-2.5 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-950"
         >
           How it works
         </Link>
@@ -117,8 +117,10 @@ function DashboardFilters({ active }: { active: string }) {
           key={key}
           href={`/dashboard?filter=${key}`}
           className={twMerge(
-            "rounded-xl bg-white/10 px-3 py-1 text-xs uppercase transition hover:bg-white/20",
-            active === key ? "bg-white/20 text-white" : "text-white/70",
+            "rounded-md bg-black/50 px-3 py-1 text-xs uppercase transition hover:bg-black/70 dark:bg-white/10 dark:hover:bg-white/20",
+            active === key
+              ? "bg-black/70 text-white dark:bg-white/20"
+              : "text-white/70",
           )}
         >
           {label}
@@ -147,10 +149,10 @@ export default async function Dashboard({
   return (
     <div>
       {/* Hero */}
-      <h1 className="text-2xl font-semibold text-white">
+      <h1 className="text-2xl font-semibold">
         Welcome back, {session.user.name}
       </h1>
-      <p className="mt-1 text-white">
+      <p className="mt-1">
         Events from your Discord servers, synced in real time.
       </p>
 
