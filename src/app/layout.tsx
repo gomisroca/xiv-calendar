@@ -28,7 +28,15 @@ export default async function RootLayout({
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
             <Navbar />
-            <main className="mt-20">{children}</main>
+            <main className="min-h-screen bg-linear-to-b from-slate-100 to-white dark:from-slate-900 dark:to-black">
+              <section className="mx-auto flex max-w-6xl min-w-2xl flex-col items-center gap-14 px-6 py-28">
+                {children}
+              </section>
+              <div className="pointer-events-none relative">
+                {/* Subtle glow */}
+                <div className="absolute -inset-4 -z-10 rounded-xl bg-indigo-100/40 blur-2xl" />
+              </div>
+            </main>
           </ThemeProvider>
         </SessionProvider>
       </body>

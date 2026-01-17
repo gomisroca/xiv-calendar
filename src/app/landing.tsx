@@ -16,55 +16,53 @@ function DiscordIcon() {
   );
 }
 
+export function DiscordButton() {
+  return (
+    <button
+      onClick={() => signIn("discord")}
+      className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 font-medium text-white shadow-sm transition hover:bg-indigo-500"
+    >
+      <DiscordIcon />
+      Continue with Discord
+    </button>
+  );
+}
+
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-linear-to-b from-slate-100 to-white dark:from-slate-900 dark:to-black">
-      <section className="mx-auto flex max-w-6xl min-w-2xl flex-col items-center gap-14 px-6 py-28">
-        {/* Left: Copy + CTA */}
-        <div>
-          <h1 className="mb-4 text-5xl font-bold">XIV Calendar</h1>
-          <p className="mb-8 text-lg">
-            RSVP to events directly from Discord or the web.
-          </p>
+    <>
+      <div>
+        <h1 className="mb-4 text-5xl font-bold">XIV Calendar</h1>
+        <p className="mb-8 text-lg">
+          RSVP to events directly from Discord or the web.
+        </p>
 
-          <div className="mt-10 flex flex-col items-center gap-4">
-            <button
-              onClick={() => signIn("discord")}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 font-medium shadow-sm transition hover:bg-indigo-500"
-            >
-              <DiscordIcon />
-              Continue with Discord
-            </button>
+        <div className="mt-10 flex flex-col items-center gap-4">
+          <DiscordButton />
 
-            <span className="text-sm text-slate-500">
-              No extra accounts · One click
+          <span className="text-sm text-slate-500">
+            No extra accounts · One click
+          </span>
+        </div>
+      </div>
+      <div className="pointer-events-none rounded-xl bg-white p-6 shadow-sm dark:bg-black">
+        <div className="space-y-3 text-sm">
+          <div className="font-semibold">🎉 Friday Game Night</div>
+          <div className="text-slate-500">Hosted in Discord</div>
+
+          <div className="mt-4 flex gap-2">
+            <span className="rounded bg-green-100 px-3 py-1 text-green-700">
+              ✅ Attending (5)
+            </span>
+            <span className="rounded bg-indigo-100 px-3 py-1 text-indigo-700">
+              ❓ Maybe (2)
+            </span>
+            <span className="rounded bg-red-100 px-3 py-1 text-red-700">
+              ❌ Declined (1)
             </span>
           </div>
         </div>
-        <div className="pointer-events-none rounded-xl bg-white p-6 shadow-sm dark:bg-black">
-          <div className="space-y-3 text-sm">
-            <div className="font-semibold">🎉 Friday Game Night</div>
-            <div className="text-slate-500">Hosted in Discord</div>
-
-            <div className="mt-4 flex gap-2">
-              <span className="rounded bg-green-100 px-3 py-1 text-green-700">
-                ✅ Attending (5)
-              </span>
-              <span className="rounded bg-indigo-100 px-3 py-1 text-indigo-700">
-                ❓ Maybe (2)
-              </span>
-              <span className="rounded bg-red-100 px-3 py-1 text-red-700">
-                ❌ Declined (1)
-              </span>
-            </div>
-          </div>
-        </div>
-        {/* Right: Visual placeholder */}
-        <div className="pointer-events-none relative">
-          {/* Subtle glow */}
-          <div className="absolute -inset-4 -z-10 rounded-xl bg-indigo-100/40 blur-2xl" />
-        </div>
-      </section>
-    </main>
+      </div>
+    </>
   );
 }
