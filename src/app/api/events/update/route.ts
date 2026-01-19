@@ -101,19 +101,44 @@ export async function POST(req: NextRequest) {
     where: { id: eventId },
     include: {
       createdBy: { select: { name: true } },
-      eventAttendances: { include: { user: { select: { name: true } } } },
+      org: {
+        include: {
+          memberships: {
+            include: {
+              user: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
+      },
+      eventAttendances: {
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      },
     },
   });
 
   if (!updatedEvent)
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
 
-  const attendanceSummary = computeAttendanceSummary(
-    updatedEvent.eventAttendances.map((a) => ({
-      status: a.status,
-      user: { name: a.user.name },
-    })),
+  const attendanceByUserId = new Map(
+    updatedEvent.eventAttendances.map((a) => [a.userId, a]),
   );
+
+  const normalizedAttendances = updatedEvent.org.memberships.map((m) => {
+    const attendance = attendanceByUserId.get(m.user.id);
+
+    return {
+      status: attendance?.status ?? EventStatus.PENDING,
+      user: {
+        name: m.user.name,
+      },
+    };
+  });
+
+  const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
   const eventForDiscord = {
     id: updatedEvent.id,

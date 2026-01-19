@@ -94,6 +94,17 @@ export async function createEvent(
       where: { id: event.id },
       include: {
         createdBy: { select: { id: true, name: true } },
+        org: {
+          include: {
+            memberships: {
+              include: {
+                user: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
         eventAttendances: {
           include: {
             user: { select: { id: true, name: true } },
@@ -103,13 +114,22 @@ export async function createEvent(
     });
     if (!fullEvent) return { success: false, error: "Failed to create event" };
 
-    const rawAttendances = fullEvent.eventAttendances.map((a) => ({
-      status: a.status,
-      user: {
-        name: a.user.name,
-      },
-    }));
-    const attendanceSummary = computeAttendanceSummary(rawAttendances);
+    const attendanceByUserId = new Map(
+      fullEvent.eventAttendances.map((a) => [a.userId, a]),
+    );
+
+    const normalizedAttendances = fullEvent.org.memberships.map((m) => {
+      const attendance = attendanceByUserId.get(m.user.id);
+
+      return {
+        status: attendance?.status ?? EventStatus.PENDING,
+        user: {
+          name: m.user.name,
+        },
+      };
+    });
+
+    const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
     const eventForDiscord = {
       id: fullEvent.id,
@@ -142,8 +162,6 @@ export async function createEvent(
         embed,
       }),
     });
-
-    console.log(botRes);
 
     if (!botRes.ok) {
       throw new Error("Failed to post event to Discord");
@@ -452,22 +470,44 @@ export async function rsvpToEvent(
       where: { id: eventId },
       include: {
         createdBy: { select: { name: true } },
-        eventAttendances: {
-          include: { user: { select: { name: true } } },
+        org: {
+          include: {
+            memberships: {
+              include: {
+                user: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
         },
-        org: { include: { memberships: true } },
+        eventAttendances: {
+          include: {
+            user: { select: { id: true, name: true } },
+          },
+        },
       },
     });
     if (!updatedEvent) {
       return { success: false, error: "Event not found", code: "NOT_FOUND" };
     }
 
-    const attendanceSummary = computeAttendanceSummary(
-      updatedEvent.eventAttendances.map((a) => ({
-        status: a.status,
-        user: { name: a.user.name },
-      })),
+    const attendanceByUserId = new Map(
+      updatedEvent.eventAttendances.map((a) => [a.userId, a]),
     );
+
+    const normalizedAttendances = updatedEvent.org.memberships.map((m) => {
+      const attendance = attendanceByUserId.get(m.user.id);
+
+      return {
+        status: attendance?.status ?? EventStatus.PENDING,
+        user: {
+          name: m.user.name,
+        },
+      };
+    });
+
+    const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
     const eventForDiscord = {
       id: updatedEvent.id,
