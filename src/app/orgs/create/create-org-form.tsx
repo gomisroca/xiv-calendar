@@ -1,91 +1,88 @@
 "use client";
 
 import { createOrganization } from "@/server/actions/organizations";
+import { unwrap } from "@/utils/actions";
 import { useState } from "react";
 
 export default function CreateOrganizationForm() {
-  const [message, setMessage] = useState<{
-    content: string;
-    error?: boolean;
-  } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setLoading(true);
+    setMessage(null);
 
     const form = e.currentTarget;
-    setMessage(null);
-    setLoading(true);
-
     const formData = new FormData(form);
+
     const name = (formData.get("name") as string)?.trim();
     const discordChannelId = (
       formData.get("discordChannelId") as string
     )?.trim();
 
-    const result = await createOrganization({ name, discordChannelId });
+    try {
+      const result = await createOrganization({ name, discordChannelId });
 
-    if (!result.success) {
-      setMessage({
-        content: result.error,
-        error: true,
-      });
-    } else {
-      setMessage({
-        content: result.data,
-      });
+      const message = unwrap(result);
+      setMessage(message);
+
       form.reset();
+    } catch (err) {
+      setMessage(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong creating the event",
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto max-w-md space-y-4 rounded bg-black/40 p-4 shadow"
+      className="w-md space-y-6 rounded-xl bg-white p-8 shadow-sm dark:bg-black"
     >
+      {/* Organization name */}
       <div>
-        <label htmlFor="name" className="mb-1 block font-medium">
-          Organization Name
+        <label className="mb-1.5 block text-sm font-medium">
+          Organization name
         </label>
         <input
           type="text"
-          id="name"
           name="name"
+          placeholder="Dungeon Crawlers"
           required
-          className="w-full rounded border px-3 py-2 focus:border-blue-300 focus:ring focus:outline-none"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-800 dark:bg-black"
         />
       </div>
 
+      {/* Discord channel ID */}
       <div>
-        <label htmlFor="discordChannelId" className="mb-1 block font-medium">
+        <label className="mb-1.5 block text-sm font-medium">
           Discord Channel ID
         </label>
         <input
           type="text"
-          id="discordChannelId"
           name="discordChannelId"
+          placeholder="1123456789"
           required
-          className="w-full rounded border px-3 py-2 focus:border-blue-300 focus:ring focus:outline-none"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-800 dark:bg-black"
         />
       </div>
 
+      {/* Submit */}
       <button
         type="submit"
         disabled={loading}
-        className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? "Creating..." : "Create Organization"}
+        {loading ? "Creating…" : "Create Organization"}
       </button>
 
-      {message && (
-        <p
-          className={`${message.error ? "text-red-600" : "text-green-600"} mt-2`}
-        >
-          {message.content}
-        </p>
-      )}
+      {/* Message */}
+      {message && <p className="text-sm text-slate-500">{message}</p>}
     </form>
   );
 }
