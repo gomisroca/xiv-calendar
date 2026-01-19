@@ -2,16 +2,16 @@
 
 import { z } from "zod";
 import { db } from "@/server/db";
-import { auth } from "@/server/auth";
 import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
-import { requirePermission } from "../auth/permissions";
+import { checkUser, isMember, requirePermission } from "../auth/permissions";
 import { env } from "@/env";
 import {
   computeAttendanceSummary,
   RATE_LIMIT_MS,
   renderEventEmbed,
 } from "@/utils/events";
+import { redirect } from "next/navigation";
 
 const CreateEventSchema = z.object({
   orgId: z.string(),
@@ -26,14 +26,8 @@ const CreateEventSchema = z.object({
 export async function createEvent(
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
   const parsed = CreateEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -55,7 +49,7 @@ export async function createEvent(
   } = parsed.data;
 
   const permissions = await requirePermission({
-    userId: session.user.id,
+    userId: userCheck.data.id,
     orgId: orgId,
     permission: Permission.CREATE_EVENT,
   });
@@ -79,7 +73,7 @@ export async function createEvent(
           startsAt,
           endsAt,
           orgId,
-          createdById: session.user.id,
+          createdById: userCheck.data.id,
           description,
           location,
         },
@@ -88,7 +82,7 @@ export async function createEvent(
       await trx.eventAttendance.create({
         data: {
           eventId: event.id,
-          userId: session.user.id,
+          userId: userCheck.data.id,
           status: EventStatus.ATTENDING,
         },
       });
@@ -204,14 +198,12 @@ export async function getOrganizationEvents({
 }: {
   orgId: string;
 }): Promise<ActionResult<EventWithAttendance[]>> {
-  const session = await auth();
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
+  const membership = await isMember({ userId: userCheck.data.id, orgId });
+  if (!membership.success) {
+    return redirect("/unauthorized");
   }
 
   try {
@@ -219,7 +211,7 @@ export async function getOrganizationEvents({
       where: {
         id: orgId,
         memberships: {
-          some: { userId: session.user.id },
+          some: { userId: userCheck.data.id },
         },
       },
       include: {
@@ -302,14 +294,12 @@ export async function getSingleEvent({
 }: {
   eventId: string;
 }): Promise<ActionResult<EventWithAttendance>> {
-  const session = await auth();
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
+  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  if (!membership.success) {
+    return redirect("/unauthorized");
   }
 
   try {
@@ -337,6 +327,7 @@ export async function getSingleEvent({
         },
       },
     });
+
     if (!event) {
       return {
         success: false,
@@ -391,14 +382,8 @@ const RSVPEventSchema = z.object({
 export async function rsvpToEvent(
   input: unknown,
 ): Promise<ActionResult<{ status: EventStatus }>> {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
   const parsed = RSVPEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -411,12 +396,26 @@ export async function rsvpToEvent(
 
   const { eventId, status } = parsed.data;
 
+  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  if (!membership.success) {
+    return redirect("/unauthorized");
+  }
+
   try {
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      include: {
+        org: { select: { id: true } },
+      },
+    });
+    if (!event)
+      return { success: false, error: "Event not found", code: "NOT_FOUND" };
+
     const existing = await db.eventAttendance.findUnique({
       where: {
         eventId_userId: {
           eventId,
-          userId: session.user.id,
+          userId: userCheck.data.id,
         },
       },
     });
@@ -438,18 +437,18 @@ export async function rsvpToEvent(
       where: {
         eventId_userId: {
           eventId,
-          userId: session.user.id,
+          userId: userCheck.data.id,
         },
       },
       update: { status },
       create: {
         eventId,
-        userId: session.user.id,
+        userId: userCheck.data.id,
         status,
       },
     });
 
-    const event = await db.event.findUnique({
+    const updatedEvent = await db.event.findUnique({
       where: { id: eventId },
       include: {
         createdBy: { select: { name: true } },
@@ -459,31 +458,31 @@ export async function rsvpToEvent(
         org: { include: { memberships: true } },
       },
     });
-    if (!event) {
+    if (!updatedEvent) {
       return { success: false, error: "Event not found", code: "NOT_FOUND" };
     }
 
     const attendanceSummary = computeAttendanceSummary(
-      event.eventAttendances.map((a) => ({
+      updatedEvent.eventAttendances.map((a) => ({
         status: a.status,
         user: { name: a.user.name },
       })),
     );
 
     const eventForDiscord = {
-      id: event.id,
-      name: event.name,
-      description: event.description,
-      location: event.location,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      createdByName: event.createdBy.name,
+      id: updatedEvent.id,
+      name: updatedEvent.name,
+      description: updatedEvent.description,
+      location: updatedEvent.location,
+      startsAt: updatedEvent.startsAt,
+      endsAt: updatedEvent.endsAt,
+      createdByName: updatedEvent.createdBy.name,
       attendance: attendanceSummary,
     };
 
     const embed = renderEventEmbed(eventForDiscord);
 
-    if (event.discordMessageId && event.discordChannelId) {
+    if (updatedEvent.discordMessageId && updatedEvent.discordChannelId) {
       await fetch(`${env.BOT_URL}/update-event`, {
         method: "POST",
         headers: {
@@ -491,10 +490,10 @@ export async function rsvpToEvent(
           "x-bot-secret": env.BOT_SECRET,
         },
         body: JSON.stringify({
-          channelId: event.discordChannelId,
-          messageId: event.discordMessageId,
-          eventId: event.id,
-          eventStartTime: event.startsAt,
+          channelId: updatedEvent.discordChannelId,
+          messageId: updatedEvent.discordMessageId,
+          eventId: updatedEvent.id,
+          eventStartTime: updatedEvent.startsAt,
           embed,
         }),
       });
@@ -522,6 +521,7 @@ export type UserEvent = {
   organization: {
     id: string;
     name: string;
+    slug: string;
   };
 
   myStatus: EventStatus | null;
@@ -539,15 +539,9 @@ export async function getUserEvents({
 }: {
   filter?: UserEventsFilter;
 } = {}): Promise<ActionResult<UserEvent[]>> {
-  const session = await auth();
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
-  }
   const now = new Date();
 
   const timeFilter =
@@ -564,7 +558,7 @@ export async function getUserEvents({
         org: {
           memberships: {
             some: {
-              userId: session.user.id,
+              userId: userCheck.data.id,
             },
           },
         },
@@ -577,6 +571,7 @@ export async function getUserEvents({
           select: {
             id: true,
             name: true,
+            slug: true,
           },
         },
         eventAttendances: {
@@ -590,7 +585,7 @@ export async function getUserEvents({
 
     const mapped: UserEvent[] = events.map((event) => {
       const myAttendance = event.eventAttendances.find(
-        (a) => a.userId === session.user.id,
+        (a) => a.userId === userCheck.data.id,
       );
 
       const counts = {

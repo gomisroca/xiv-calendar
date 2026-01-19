@@ -1,21 +1,26 @@
 import { getSingleEvent } from "@/server/actions/events";
 import { unwrap } from "@/utils/actions";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "./rsvp-buttons";
-import { auth } from "@/server/auth";
 import { maskAttendance } from "@/utils/events";
+import { checkUser, isMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
-  const session = await auth();
+  const userCheck = await checkUser();
+  if (!userCheck.success) return redirect("/unauthorized");
+
   const { eventId } = await params;
+
+  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  if (!membership.success) return redirect("/unauthorized");
 
   const event = unwrap(await getSingleEvent({ eventId }));
 
   if (!event) notFound();
 
   const initialStatus = event.attendance.find(
-    (attendance) => attendance.userId === session?.user?.id,
+    (attendance) => attendance.userId === userCheck.data.id,
   )?.status;
 
   return (

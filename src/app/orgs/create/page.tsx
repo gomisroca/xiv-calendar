@@ -1,13 +1,10 @@
-import { notFound } from "next/navigation";
-import { auth } from "@/server/auth";
+import { redirect } from "next/navigation";
 import CreateOrganizationForm from "./create-org-form";
+import { checkUser } from "@/server/auth/permissions";
 
 export default async function CreateOrgPage() {
-  const session = await auth();
-
-  if (!session?.user) {
-    return notFound();
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return redirect("/unauthorized");
 
   return (
     <div className="mx-auto mt-8 max-w-md">

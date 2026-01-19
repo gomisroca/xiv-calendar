@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { db } from "@/server/db";
-import { auth } from "@/server/auth";
 import { Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
+import { checkUser } from "../auth/permissions";
 
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
@@ -30,14 +30,8 @@ async function generateSlug(base: string) {
 export async function createOrganization(
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const session = await auth();
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
   const parsed = CreateOrganizationSchema.safeParse(input);
   if (!parsed.success) {
@@ -75,7 +69,7 @@ export async function createOrganization(
 
       await trx.membership.create({
         data: {
-          userId: session.user.id,
+          userId: userCheck.data.id,
           orgId: org.id,
           roleOrgId: org.id,
           roleName: adminRole.name,
@@ -108,26 +102,19 @@ export type OrganizationWithRole = {
 export async function getUserOrganizations(): Promise<
   ActionResult<OrganizationWithRole[]>
 > {
-  const session = await auth();
-
-  if (!session?.user) {
-    return {
-      success: false,
-      error: "You must be signed in",
-      code: "UNAUTHORIZED",
-    };
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
 
   try {
     const organizations = await db.organization.findMany({
       where: {
         memberships: {
-          some: { userId: session.user.id },
+          some: { userId: userCheck.data.id },
         },
       },
       include: {
         memberships: {
-          where: { userId: session.user.id },
+          where: { userId: userCheck.data.id },
           include: { role: true },
         },
       },

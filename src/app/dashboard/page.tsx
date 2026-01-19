@@ -1,10 +1,11 @@
 import { unwrap } from "@/utils/actions";
 import RSVPButtons from "../orgs/[slug]/[eventId]/rsvp-buttons";
 import { getUserEvents, type UserEvent } from "@/server/actions/events";
-import { auth } from "@/server/auth";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
 import { twMerge } from "tailwind-merge";
+import { redirect } from "next/navigation";
+import { checkUser } from "@/server/auth/permissions";
 
 const STATUS_BADGE: Record<EventStatus, { label: string; className: string }> =
   {
@@ -82,7 +83,9 @@ function EventCard({ event }: { event: UserEvent }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-medium">{event.name}</h3>
+            <Link href={`/orgs/${event.organization.slug}/${event.id}`}>
+              <h3 className="font-medium">{event.name}</h3>
+            </Link>
             <p className="text-sm text-slate-500">{event.organization.name}</p>
           </div>
           <p className="text-sm text-slate-500">
@@ -135,10 +138,8 @@ export default async function Dashboard({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user) {
-    return <p>You must be signed in to view this page</p>;
-  }
+  const userCheck = await checkUser();
+  if (!userCheck.success) return redirect("/unauthorized");
 
   const filter = (await searchParams).filter ?? "upcoming";
   const actionFilter =
@@ -150,7 +151,7 @@ export default async function Dashboard({
     <div>
       {/* Hero */}
       <h1 className="text-2xl font-semibold">
-        Welcome back, {session.user.name}
+        Welcome back, {userCheck.data.name}
       </h1>
       <p className="mt-1">
         Events from your Discord servers, synced in real time.

@@ -1,12 +1,16 @@
 import { getOrganizationEvents } from "@/server/actions/events";
 import { db } from "@/server/db";
 import { unwrap } from "@/utils/actions";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Calendar from "./calendar";
+import { checkUser, isMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ slug: string }>;
 export default async function OrgView({ params }: { params: Params }) {
   const { slug } = await params;
+
+  const userCheck = await checkUser();
+  if (!userCheck.success) return redirect("/unauthorized");
 
   const org = await db.organization.findUnique({
     where: { slug },
@@ -14,6 +18,12 @@ export default async function OrgView({ params }: { params: Params }) {
   });
 
   if (!org) notFound();
+
+  const membership = await isMember({
+    userId: userCheck.data.id,
+    orgId: org.id,
+  });
+  if (!membership.success) return redirect("/unauthorized");
 
   const events = unwrap(await getOrganizationEvents({ orgId: org.id }));
 
