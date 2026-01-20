@@ -7,7 +7,7 @@ import type { ActionResult } from "@/utils/actions";
 import { checkUser, isMember, requirePermission } from "../auth/permissions";
 import { env } from "@/env";
 import {
-  computeAttendanceSummary,
+  getEventAttendanceCounts,
   RATE_LIMIT_MS,
   renderEventEmbed,
 } from "@/utils/events";
@@ -92,44 +92,25 @@ export async function createEvent(
 
     const fullEvent = await db.event.findUnique({
       where: { id: event.id },
-      include: {
-        createdBy: { select: { id: true, name: true } },
-        org: {
-          include: {
-            memberships: {
-              include: {
-                user: {
-                  select: { id: true, name: true },
-                },
-              },
-            },
-          },
-        },
-        eventAttendances: {
-          include: {
-            user: { select: { id: true, name: true } },
-          },
-        },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        location: true,
+        startsAt: true,
+        endsAt: true,
+        orgId: true,
+        createdBy: { select: { name: true } },
+        discordChannelId: true,
+        discordMessageId: true,
       },
     });
     if (!fullEvent) return { success: false, error: "Failed to create event" };
 
-    const attendanceByUserId = new Map(
-      fullEvent.eventAttendances.map((a) => [a.userId, a]),
+    const attendance = await getEventAttendanceCounts(
+      fullEvent.id,
+      fullEvent.orgId,
     );
-
-    const normalizedAttendances = fullEvent.org.memberships.map((m) => {
-      const attendance = attendanceByUserId.get(m.user.id);
-
-      return {
-        status: attendance?.status ?? EventStatus.PENDING,
-        user: {
-          name: m.user.name,
-        },
-      };
-    });
-
-    const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
     const eventForDiscord = {
       id: fullEvent.id,
@@ -139,7 +120,7 @@ export async function createEvent(
       startsAt: fullEvent.startsAt,
       endsAt: fullEvent.endsAt,
       createdByName: fullEvent.createdBy.name,
-      attendance: attendanceSummary,
+      attendance,
     };
 
     const embed = renderEventEmbed(eventForDiscord);
@@ -468,46 +449,27 @@ export async function rsvpToEvent(
 
     const updatedEvent = await db.event.findUnique({
       where: { id: eventId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        location: true,
+        startsAt: true,
+        endsAt: true,
+        orgId: true,
         createdBy: { select: { name: true } },
-        org: {
-          include: {
-            memberships: {
-              include: {
-                user: {
-                  select: { id: true, name: true },
-                },
-              },
-            },
-          },
-        },
-        eventAttendances: {
-          include: {
-            user: { select: { id: true, name: true } },
-          },
-        },
+        discordChannelId: true,
+        discordMessageId: true,
       },
     });
     if (!updatedEvent) {
       return { success: false, error: "Event not found", code: "NOT_FOUND" };
     }
 
-    const attendanceByUserId = new Map(
-      updatedEvent.eventAttendances.map((a) => [a.userId, a]),
+    const attendance = await getEventAttendanceCounts(
+      updatedEvent.id,
+      updatedEvent.orgId,
     );
-
-    const normalizedAttendances = updatedEvent.org.memberships.map((m) => {
-      const attendance = attendanceByUserId.get(m.user.id);
-
-      return {
-        status: attendance?.status ?? EventStatus.PENDING,
-        user: {
-          name: m.user.name,
-        },
-      };
-    });
-
-    const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
     const eventForDiscord = {
       id: updatedEvent.id,
@@ -517,7 +479,7 @@ export async function rsvpToEvent(
       startsAt: updatedEvent.startsAt,
       endsAt: updatedEvent.endsAt,
       createdByName: updatedEvent.createdBy.name,
-      attendance: attendanceSummary,
+      attendance,
     };
 
     const embed = renderEventEmbed(eventForDiscord);
@@ -569,6 +531,7 @@ export type UserEvent = {
     attending: number;
     maybe: number;
     notAttending: number;
+    pending: number;
   };
 };
 
@@ -612,6 +575,9 @@ export async function getUserEvents({
             id: true,
             name: true,
             slug: true,
+            _count: {
+              select: { memberships: true },
+            },
           },
         },
         eventAttendances: {
@@ -632,6 +598,7 @@ export async function getUserEvents({
         attending: 0,
         maybe: 0,
         notAttending: 0,
+        pending: event.org._count.memberships,
       };
 
       for (const a of event.eventAttendances) {
