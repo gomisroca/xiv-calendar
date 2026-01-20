@@ -19,7 +19,7 @@ const DiscordRSVPSchema = z.object({
   ]),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<Response> {
   if (req.headers.get("x-bot-secret") !== env.BOT_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -113,7 +113,10 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!updatedEvent) {
-    return { success: false, error: "Event not found", code: "NOT_FOUND" };
+    return NextResponse.json(
+      { success: false, error: "Event not found", code: "NOT_FOUND" },
+      { status: 404 },
+    );
   }
 
   const attendance = await getEventAttendanceCounts(
