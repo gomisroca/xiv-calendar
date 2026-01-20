@@ -20,7 +20,8 @@ const geist = Geist({
 
 export default async function RootLayout({
   children,
-}: Readonly<{ children: React.ReactNode }>) {
+  modal,
+}: Readonly<{ children: React.ReactNode; modal: React.ReactNode }>) {
   const session = await auth();
   return (
     <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
@@ -37,6 +38,8 @@ export default async function RootLayout({
                 <div className="absolute -inset-4 -z-10 rounded-xl bg-indigo-100/40 blur-2xl" />
               </div>
             </main>
+            <div id="modal-root" />
+            {modal}
           </ThemeProvider>
         </SessionProvider>
       </body>
