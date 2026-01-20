@@ -72,6 +72,31 @@ function EmptyDashboard() {
   );
 }
 
+function AttendanceSummary({
+  counts,
+  href,
+}: {
+  counts: UserEvent["attendanceCounts"];
+  href: string;
+}) {
+  return (
+    <div className="mt-4 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+      <div className="flex gap-4">
+        <span>✅ {counts.attending}</span>
+        <span>❓ {counts.maybe}</span>
+        <span>⏳ {counts.pending}</span>
+      </div>
+
+      <Link
+        href={href}
+        className="text-indigo-600 hover:underline dark:text-indigo-400"
+      >
+        View attendees
+      </Link>
+    </div>
+  );
+}
+
 function EventCard({ event }: { event: UserEvent }) {
   const status = event.myStatus;
 
@@ -100,6 +125,11 @@ function EventCard({ event }: { event: UserEvent }) {
           </span>
         )}
       </div>
+
+      <AttendanceSummary
+        counts={event.attendanceCounts}
+        href={`/orgs/${event.organization.slug}/${event.id}/attendance`}
+      />
 
       <div className="mt-4">
         <RSVPButtons eventId={event.id} initialStatus={status ?? undefined} />

@@ -4,7 +4,7 @@ import { EventStatus } from "generated/prisma";
 import { env } from "@/env";
 import { z } from "zod";
 import {
-  computeAttendanceSummary,
+  getEventAttendanceCounts,
   RATE_LIMIT_MS,
   renderEventEmbed,
 } from "@/utils/events";
@@ -99,46 +99,27 @@ export async function POST(req: NextRequest) {
 
   const updatedEvent = await db.event.findUnique({
     where: { id: eventId },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      location: true,
+      startsAt: true,
+      endsAt: true,
+      orgId: true,
       createdBy: { select: { name: true } },
-      org: {
-        include: {
-          memberships: {
-            include: {
-              user: {
-                select: { id: true, name: true },
-              },
-            },
-          },
-        },
-      },
-      eventAttendances: {
-        include: {
-          user: { select: { id: true, name: true } },
-        },
-      },
+      discordChannelId: true,
+      discordMessageId: true,
     },
   });
+  if (!updatedEvent) {
+    return { success: false, error: "Event not found", code: "NOT_FOUND" };
+  }
 
-  if (!updatedEvent)
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-
-  const attendanceByUserId = new Map(
-    updatedEvent.eventAttendances.map((a) => [a.userId, a]),
+  const attendance = await getEventAttendanceCounts(
+    updatedEvent.id,
+    updatedEvent.orgId,
   );
-
-  const normalizedAttendances = updatedEvent.org.memberships.map((m) => {
-    const attendance = attendanceByUserId.get(m.user.id);
-
-    return {
-      status: attendance?.status ?? EventStatus.PENDING,
-      user: {
-        name: m.user.name,
-      },
-    };
-  });
-
-  const attendanceSummary = computeAttendanceSummary(normalizedAttendances);
 
   const eventForDiscord = {
     id: updatedEvent.id,
@@ -148,7 +129,7 @@ export async function POST(req: NextRequest) {
     startsAt: updatedEvent.startsAt,
     endsAt: updatedEvent.endsAt,
     createdByName: updatedEvent.createdBy.name,
-    attendance: attendanceSummary,
+    attendance,
   };
 
   const embed = renderEventEmbed(eventForDiscord);
