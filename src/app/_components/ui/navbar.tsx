@@ -8,7 +8,7 @@ export default function Navbar() {
   const session = useSession();
 
   return (
-    <header className="fixed top-0 z-50 w-full bg-white shadow-sm dark:bg-black">
+    <header className="fixed top-0 z-50 w-full bg-white shadow-sm dark:bg-black dark:shadow-white/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         {/* Logo / site name */}
         <Link href="/" className="text-2xl font-bold text-indigo-600">
