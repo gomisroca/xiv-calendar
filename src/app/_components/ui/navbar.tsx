@@ -1,13 +1,79 @@
 "use client";
 
 import ThemeToggle from "@/app/_components/ui/theme-changer";
+import { LogIn, LogOut } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+function NavbarControls() {
+  const { data: session } = useSession();
+
+  return (
+    <div className="flex items-center gap-4">
+      {session?.user ? (
+        <div className="flex items-center gap-2 rounded-full bg-white/30 p-1 shadow-inner dark:bg-black/30">
+          {/* Notification bell */}
+          <button className="relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/20 text-slate-700 shadow-inner transition hover:bg-white/50 hover:shadow-md dark:bg-black/20 dark:text-slate-200 dark:hover:bg-black/50">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+              />
+            </svg>
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+          </button>
+
+          {/* Avatar */}
+          <Link
+            href="/profile"
+            className="flex h-9 w-9 overflow-hidden rounded-full shadow-sm transition hover:shadow-md hover:contrast-125 dark:border-black"
+          >
+            <Image
+              width={36}
+              height={36}
+              src={session.user.image ?? "/default-avatar.png"}
+              alt={session.user.name ?? "User"}
+              className="h-full w-full object-cover"
+            />
+          </Link>
+
+          {/* Logout */}
+          <button
+            onClick={() => signOut()}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-red-500 text-white shadow-sm transition hover:bg-red-400 hover:shadow-md"
+            aria-label="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
+        </div>
+      ) : (
+        // Login icon button
+        <button
+          onClick={() => signIn("discord")}
+          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md"
+          aria-label="Login with Discord"
+        >
+          <LogIn className="h-5 w-5" />
+        </button>
+      )}
+
+      {/* Theme toggle */}
+      <ThemeToggle />
+    </div>
+  );
+}
+
 export default function Navbar() {
-  const session = useSession();
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
 
@@ -49,61 +115,7 @@ export default function Navbar() {
         </Link>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
-          {session?.data?.user ? (
-            <>
-              {/* Notification bell */}
-              <button className="relative rounded-full p-2 transition hover:bg-white/20 dark:hover:bg-white/10">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-slate-700 dark:text-slate-200"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
-                <span className="absolute top-0 right-0 inline-block h-2 w-2 rounded-full bg-red-500" />
-              </button>
-
-              {/* Avatar */}
-              <Link
-                href="/profile"
-                className="h-8 w-8 overflow-hidden rounded-full border-2 border-white transition hover:ring-2 hover:ring-indigo-400 dark:border-black"
-              >
-                <Image
-                  width={10}
-                  height={10}
-                  src={session.data.user.image ?? "/default-avatar.png"}
-                  alt={session.data.user.name ?? "User"}
-                  className="h-full w-full object-cover"
-                />
-              </Link>
-
-              {/* Logout */}
-              <button
-                onClick={() => signOut()}
-                className="rounded-lg bg-red-500 px-3 py-1 text-sm font-medium text-white transition hover:bg-red-400"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={() => signIn("discord")}
-              className="rounded-lg bg-indigo-600 px-3 py-1 text-sm font-medium text-white transition hover:bg-indigo-500"
-            >
-              Discord Login
-            </button>
-          )}
-
-          <ThemeToggle />
-        </div>
+        <NavbarControls />
       </div>
     </header>
   );

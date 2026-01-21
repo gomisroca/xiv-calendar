@@ -13,20 +13,24 @@ export default function ThemeToggle() {
   const isDark = theme === "dark";
 
   return (
-    <button
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="relative flex h-10 w-20 cursor-pointer items-center rounded-full bg-gray-200 px-1 transition-colors duration-300 dark:bg-gray-800"
-    >
-      {/* Sun and Moon icons */}
-      <span className="absolute left-2 text-yellow-500">🌞</span>
-      <span className="absolute right-2 text-gray-200 dark:text-yellow-300">
-        🌙
-      </span>
+    <div className="ml-2 flex items-center">
+      <button
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        className="relative flex h-9 w-16 cursor-pointer items-center rounded-full bg-white/30 p-1 shadow-inner backdrop-blur-sm transition-all duration-300 dark:bg-black/30"
+      >
+        {/* Sun & Moon */}
+        <span className="absolute left-2 text-sm text-yellow-400">🌞</span>
+        <span className="absolute right-2 text-sm text-gray-400 dark:text-yellow-300">
+          🌙
+        </span>
 
-      {/* The toggle circle */}
-      <span
-        className={`absolute top-1 left-1 h-8 w-8 transform rounded-full bg-white shadow-md transition-transform duration-300 ${isDark ? "translate-x-10" : "translate-x-0"}`}
-      />
-    </button>
+        {/* Toggle circle */}
+        <span
+          className={`absolute top-1 h-7 w-7 rounded-full bg-white shadow transition-transform duration-300 dark:bg-gray-900 ${
+            isDark ? "translate-x-7" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
   );
 }
