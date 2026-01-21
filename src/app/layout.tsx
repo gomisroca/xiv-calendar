@@ -25,19 +25,24 @@ export default async function RootLayout({
   const session = await auth();
   return (
     <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
-      <body className="flex min-h-screen flex-col items-center justify-center bg-linear-to-b/shorter from-sky-700 from-65% to-indigo-950 text-black dark:from-[#002349] dark:to-[#09002f] dark:text-white">
+      <body className="relative min-h-screen text-black dark:text-white">
+        <div className="fixed inset-0 -z-10 bg-linear-to-b/shorter from-indigo-100 via-sky-200 to-white dark:from-[#00162f] dark:via-[#012538] dark:to-black" />
+        <div className="pointer-events-none fixed inset-0 -z-10 bg-black/10" />
+
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
             <Navbar />
-            <main className="min-h-screen bg-linear-to-b from-slate-100 to-white dark:from-slate-900 dark:to-black">
-              <section className="mx-auto flex max-w-6xl min-w-2xl flex-col items-center gap-14 px-6 py-28">
+
+            <main className="relative flex-1">
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-32 mx-auto h-[70%] max-w-6xl rounded-3xl bg-indigo-200/10 blur-3xl dark:bg-[#00162f]/10"
+              />
+              <section className="mx-auto mt-24 mb-6 flex max-w-6xl min-w-2xl flex-col items-center gap-14 rounded-2xl bg-linear-to-b from-slate-50 to-white px-6 py-28 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.25)] ring-1 ring-black/5 dark:from-slate-900 dark:to-slate-950 dark:shadow-[0_20px_60px_-20px_rgba(0,0,0,0.7)] dark:ring-white/5">
                 {children}
               </section>
-              <div className="pointer-events-none relative">
-                {/* Subtle glow */}
-                <div className="absolute -inset-4 -z-10 rounded-xl bg-indigo-100/40 blur-2xl" />
-              </div>
             </main>
+
             <div id="modal-root" />
             {modal}
           </ThemeProvider>
