@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { Permission, type User } from "generated/prisma";
+import { type Permission, type User } from "generated/prisma";
 import { type ActionResult } from "@/utils/actions";
 import { auth } from ".";
 import { getOrgIdFromEvent } from "../actions/events";
@@ -112,6 +112,3 @@ export async function requireEventOrgMember(
 
   return requireOrgMember(userId, orgId);
 }
-
-export const OWNER_PERMISSIONS = Object.values(Permission);
-export const MEMBER_PERMISSIONS = [Permission.EVENT_CREATE];
