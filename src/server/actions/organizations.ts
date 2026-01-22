@@ -2,9 +2,10 @@
 
 import { z } from "zod";
 import { db } from "@/server/db";
-import { Permission } from "generated/prisma";
+import { type Organization, type Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 import { checkUser } from "../auth/permissions";
+import { createDefaultRoles, getRoleByName } from "@/utils/permissions";
 
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
@@ -54,25 +55,15 @@ export async function createOrganization(
         data: { name, slug, discordChannelId },
       });
 
-      const adminRole = await trx.role.create({
-        data: {
-          name: "admin",
-          orgId: org.id,
-          permissions: [
-            Permission.CREATE_EVENT,
-            Permission.EDIT_EVENT,
-            Permission.DELETE_EVENT,
-            Permission.MANAGE_MEMBERS,
-          ],
-        },
-      });
+      await createDefaultRoles(trx, org.id);
+
+      const ownerRole = await getRoleByName(trx, org.id, "Owner");
 
       await trx.membership.create({
         data: {
           userId: userCheck.data.id,
           orgId: org.id,
-          roleOrgId: org.id,
-          roleName: adminRole.name,
+          roleId: ownerRole.id,
         },
       });
     });
@@ -86,6 +77,72 @@ export async function createOrganization(
     return {
       success: false,
       error: "Failed to create organization",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+export async function joinOrganization(
+  orgId: string,
+): Promise<ActionResult<string>> {
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
+
+  try {
+    await db.$transaction(async (trx) => {
+      const org = await trx.organization.findUnique({
+        where: { id: orgId },
+      });
+
+      if (!org) {
+        return {
+          success: false,
+          error: "Organization not found",
+          code: "NOT_FOUND",
+        } as ActionResult<string>;
+      }
+
+      const existingMembership = await trx.membership.findUnique({
+        where: {
+          orgId_userId: {
+            orgId,
+            userId: userCheck.data.id,
+          },
+        },
+      });
+
+      if (existingMembership) {
+        return {
+          success: false,
+          error: "You are already a member of this organization",
+          code: "CONFLICT",
+        };
+      }
+
+      const memberRole = await getRoleByName(trx, orgId, "Member");
+
+      if (!memberRole) {
+        throw new Error("Invariant: Member role not found");
+      }
+
+      await trx.membership.create({
+        data: {
+          userId: userCheck.data.id,
+          orgId,
+          roleId: memberRole.id,
+        },
+      });
+    });
+
+    return {
+      success: true,
+      data: `Joined organization "${orgId}"`,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to join organization",
       code: "UNKNOWN",
     };
   }
@@ -137,6 +194,56 @@ export async function getUserOrganizations(): Promise<
     return {
       success: true,
       data: mapped,
+    };
+  } catch (err: unknown) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to get organizations",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+export async function getPublicOrganizations(): Promise<
+  ActionResult<
+    (Pick<Organization, "id" | "name" | "slug"> & { isMember: boolean })[]
+  >
+> {
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
+
+  try {
+    const organizations = await db.organization.findMany({
+      where: {
+        private: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        _count: {
+          select: {
+            memberships: {
+              where: {
+                userId: userCheck.data.id,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const data = organizations.map((org) => ({
+      id: org.id,
+      name: org.name,
+      slug: org.slug,
+      isMember: org._count.memberships > 0,
+    }));
+
+    return {
+      success: true,
+      data,
     };
   } catch (err: unknown) {
     console.error(err);
