@@ -1,15 +1,15 @@
-import { getUserOrganizations } from "@/server/actions/organizations";
+import { getPublicOrganizations } from "@/server/actions/organizations";
 import { unwrap } from "@/utils/actions";
-import Link from "next/link";
+import { OrgCard } from "./org-card";
 
 export default async function OrgsPage() {
-  const orgs = unwrap(await getUserOrganizations());
+  const orgs = unwrap(await getPublicOrganizations());
 
   return (
     <ul>
       {orgs.map((org) => (
         <li key={org.id}>
-          <Link href={`/orgs/${org.slug}`}>{org.name}</Link>
+          <OrgCard org={org} />
         </li>
       ))}
     </ul>
