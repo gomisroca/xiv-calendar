@@ -72,6 +72,7 @@ model Organization {
   roles            Role[]
   memberships      Membership[]
   events           Event[]
+  private          Boolean      @default(false)
 
   @@map("organization")
 }
