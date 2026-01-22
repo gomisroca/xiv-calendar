@@ -77,13 +77,19 @@ model Organization {
 }
 
 enum Permission {
-  CREATE_EVENT
-  EDIT_EVENT
-  DELETE_EVENT
-  MANAGE_MEMBERS
+  ORG_UPDATE
+  ROLE_CREATE
+  ROLE_UPDATE
+  ROLE_DELETE
+  ROLE_ASSIGN
+  MEMBER_REMOVE
+  EVENT_CREATE
+  EVENT_UPDATE
+  EVENT_DELETE
 }
 
 model Role {
+  id          String       @id @default(cuid())
   orgId       String
   name        String
   permissions Permission[]
@@ -91,21 +97,22 @@ model Role {
   org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   memberships Membership[]
 
+  isSystem   Boolean @default(false) // owner, default roles
+  isArchived Boolean @default(false) // soft delete
+
   createdAt DateTime @default(now())
 
-  @@id([orgId, name])
+  @@unique([orgId, name])
 }
 
 model Membership {
   orgId  String
   userId String
-  role   Role   @relation(fields: [roleOrgId, roleName], references: [orgId, name], onDelete: Cascade)
+  roleId String
 
   org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  roleName  String
-  roleOrgId String
+  role Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([orgId, userId])
 }
