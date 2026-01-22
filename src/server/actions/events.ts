@@ -4,7 +4,12 @@ import { z } from "zod";
 import { db } from "@/server/db";
 import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
-import { checkUser, isMember, requirePermission } from "../auth/permissions";
+import {
+  checkUser,
+  requireEventOrgMember,
+  requireOrgMember,
+  requirePermission,
+} from "../auth/permissions";
 import { env } from "@/env";
 import {
   getEventAttendanceCounts,
@@ -51,7 +56,7 @@ export async function createEvent(
   const permissions = await requirePermission({
     userId: userCheck.data.id,
     orgId: orgId,
-    permission: Permission.CREATE_EVENT,
+    permission: Permission.EVENT_CREATE,
   });
   if (!permissions.success) {
     return permissions;
@@ -200,7 +205,7 @@ export async function getOrganizationEvents({
   const userCheck = await checkUser();
   if (!userCheck.success) return userCheck;
 
-  const membership = await isMember({ userId: userCheck.data.id, orgId });
+  const membership = await requireOrgMember(userCheck.data.id, orgId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -296,7 +301,7 @@ export async function getSingleEvent({
   const userCheck = await checkUser();
   if (!userCheck.success) return userCheck;
 
-  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -395,7 +400,7 @@ export async function rsvpToEvent(
 
   const { eventId, status } = parsed.data;
 
-  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -632,4 +637,15 @@ export async function getUserEvents({
       code: "UNKNOWN",
     };
   }
+}
+
+export async function getOrgIdFromEvent(
+  eventId: string,
+): Promise<string | null> {
+  const event = await db.event.findUnique({
+    where: { id: eventId },
+    select: { orgId: true },
+  });
+
+  return event?.orgId ?? null;
 }

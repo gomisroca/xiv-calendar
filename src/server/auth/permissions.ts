@@ -1,7 +1,8 @@
 import { db } from "@/server/db";
-import { type Membership, type Permission, type User } from "generated/prisma";
+import { Permission, type User } from "generated/prisma";
 import { type ActionResult } from "@/utils/actions";
 import { auth } from ".";
+import { getOrgIdFromEvent } from "../actions/events";
 
 interface RequirePermissionArgs {
   userId: string;
@@ -36,102 +37,81 @@ export async function checkUser(): Promise<ActionResult<User>> {
   return { success: true, data: user };
 }
 
+export async function hasPermission({
+  userId,
+  orgId,
+  permission,
+}: RequirePermissionArgs): Promise<boolean> {
+  const membership = await db.membership.findUnique({
+    where: { orgId_userId: { orgId, userId } },
+    include: { role: true },
+  });
+
+  return !!membership?.role.permissions.includes(permission);
+}
+
 export async function requirePermission(
   args: RequirePermissionArgs,
 ): Promise<ActionResult<void>> {
   const { userId, orgId, permission } = args;
 
-  const membership = await db.membership.findUnique({
-    where: {
-      orgId_userId: {
-        orgId,
-        userId,
-      },
-    },
-    include: {
-      role: true,
-    },
-  });
-
-  if (!membership) {
+  if (!(await hasPermission({ userId, orgId, permission }))) {
     return {
       success: false,
-      error: "You are not a member of this organization",
+      error: "You do not have permission",
       code: "FORBIDDEN",
     };
   }
-
-  if (!membership.role.permissions.includes(permission)) {
-    return {
-      success: false,
-      error: "You do not have permission to perform this action",
-      code: "FORBIDDEN",
-    };
-  }
-
   return { success: true, data: undefined };
 }
 
-export async function isMember({
-  userId,
-  orgId,
-  eventId,
-}: {
-  userId: string;
-  orgId?: string;
-  eventId?: string;
-}): Promise<ActionResult<void>> {
-  if (!orgId && !eventId) {
-    return {
-      success: false,
-      error: "You must specify either an organization or an event ID",
-      code: "VALIDATION",
-    };
-  }
+export async function isOrgMember(
+  userId: string,
+  orgId: string,
+): Promise<boolean> {
+  const membership = await db.membership.findUnique({
+    where: {
+      orgId_userId: { orgId, userId },
+    },
+    select: { userId: true },
+  });
 
-  let membership: Membership | null = null;
-  if (orgId) {
-    membership = await db.membership.findUnique({
-      where: {
-        orgId_userId: {
-          orgId,
-          userId,
-        },
-      },
-    });
-  } else if (eventId) {
-    const event = await db.event.findUnique({
-      where: {
-        id: eventId,
-      },
-      include: {
-        org: true,
-      },
-    });
+  return !!membership;
+}
 
-    if (!event)
-      return {
-        success: false,
-        error: "Event not found",
-        code: "NOT_FOUND",
-      };
+export async function requireOrgMember(
+  userId: string,
+  orgId: string,
+): Promise<ActionResult<void>> {
+  const isMember = await isOrgMember(userId, orgId);
 
-    membership = await db.membership.findUnique({
-      where: {
-        orgId_userId: {
-          orgId: event.orgId,
-          userId,
-        },
-      },
-    });
-  }
-
-  if (!membership)
+  if (!isMember) {
     return {
       success: false,
       error: "You do not belong to this organization",
       code: "FORBIDDEN",
     };
+  }
 
   return { success: true, data: undefined };
 }
+
+export async function requireEventOrgMember(
+  userId: string,
+  eventId: string,
+): Promise<ActionResult<void>> {
+  const orgId = await getOrgIdFromEvent(eventId);
+
+  if (!orgId) {
+    return {
+      success: false,
+      error: "Event not found",
+      code: "NOT_FOUND",
+    };
+  }
+
+  return requireOrgMember(userId, orgId);
+}
+
+export const OWNER_PERMISSIONS = Object.values(Permission);
+export const MEMBER_PERMISSIONS = [Permission.EVENT_CREATE];

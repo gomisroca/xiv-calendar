@@ -1,4 +1,4 @@
-import { checkUser, isMember } from "@/server/auth/permissions";
+import { checkUser, requireEventOrgMember } from "@/server/auth/permissions";
 import { getEventAttendanceUsers, maskAttendance } from "@/utils/events";
 import { redirect } from "next/navigation";
 
@@ -9,7 +9,7 @@ export default async function EventAttendance({ params }: { params: Params }) {
 
   const { eventId } = await params;
 
-  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
   const attendance = await getEventAttendanceUsers(eventId);

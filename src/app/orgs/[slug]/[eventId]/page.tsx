@@ -3,7 +3,7 @@ import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "./rsvp-buttons";
 import { maskAttendance } from "@/utils/events";
-import { checkUser, isMember } from "@/server/auth/permissions";
+import { checkUser, requireEventOrgMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
@@ -12,7 +12,7 @@ export default async function EventId({ params }: { params: Params }) {
 
   const { eventId } = await params;
 
-  const membership = await isMember({ userId: userCheck.data.id, eventId });
+  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
   const event = unwrap(await getSingleEvent({ eventId }));

@@ -3,7 +3,7 @@ import { db } from "@/server/db";
 import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import Calendar from "./calendar";
-import { checkUser, isMember } from "@/server/auth/permissions";
+import { checkUser, requireOrgMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ slug: string }>;
 export default async function OrgView({ params }: { params: Params }) {
@@ -19,10 +19,7 @@ export default async function OrgView({ params }: { params: Params }) {
 
   if (!org) notFound();
 
-  const membership = await isMember({
-    userId: userCheck.data.id,
-    orgId: org.id,
-  });
+  const membership = await requireOrgMember(userCheck.data.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
   const events = unwrap(await getOrganizationEvents({ orgId: org.id }));

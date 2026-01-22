@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import { CreateEventForm } from "./create-event-form";
-import { checkUser, isMember } from "@/server/auth/permissions";
+import { checkUser, requireOrgMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ slug: string }>;
 export default async function CreateEventPage({ params }: { params: Params }) {
@@ -16,10 +16,7 @@ export default async function CreateEventPage({ params }: { params: Params }) {
 
   if (!org) notFound();
 
-  const membership = await isMember({
-    userId: userCheck.data.id,
-    orgId: org.id,
-  });
+  const membership = await requireOrgMember(userCheck.data.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
   return (
