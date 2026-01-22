@@ -211,7 +211,20 @@ export async function getPublicOrganizations(): Promise<
   >
 > {
   const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+
+  const countSnippet = userCheck.success
+    ? {
+        _count: {
+          select: {
+            memberships: {
+              where: {
+                userId: userCheck.data.id,
+              },
+            },
+          },
+        },
+      }
+    : undefined;
 
   try {
     const organizations = await db.organization.findMany({
@@ -222,15 +235,7 @@ export async function getPublicOrganizations(): Promise<
         id: true,
         name: true,
         slug: true,
-        _count: {
-          select: {
-            memberships: {
-              where: {
-                userId: userCheck.data.id,
-              },
-            },
-          },
-        },
+        ...countSnippet,
       },
     });
 
@@ -238,7 +243,7 @@ export async function getPublicOrganizations(): Promise<
       id: org.id,
       name: org.name,
       slug: org.slug,
-      isMember: org._count.memberships > 0,
+      isMember: org._count?.memberships > 0,
     }));
 
     return {
