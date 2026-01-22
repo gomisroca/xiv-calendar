@@ -1,15 +1,18 @@
 "use client";
 
 import { joinOrganization } from "@/server/actions/organizations";
-import type { Organization } from "generated/prisma";
+import type { Organization, User } from "generated/prisma";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { twMerge } from "tailwind-merge";
 
 export function OrgCard({
   org,
+  user,
 }: {
   org: Pick<Organization, "id" | "name" | "slug"> & { isMember: boolean };
+  user: User | null;
 }) {
   const [status, setStatus] = useState<boolean>(org.isMember);
   const [loading, setLoading] = useState(false);
@@ -19,6 +22,7 @@ export function OrgCard({
   const [error, setError] = useState<string | null>(null);
 
   const handleJoin = async () => {
+    if (!user) return;
     if (loading || isPending) return;
     if (status === true) return;
 
@@ -67,11 +71,14 @@ export function OrgCard({
         <div className="mt-4">
           <button
             type="button"
-            className="cursor-pointer rounded px-3 py-1 font-semibold tracking-wider text-black transition disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={org.isMember}
+            className={twMerge(
+              "cursor-pointer rounded bg-green-500 px-3 py-1 font-semibold tracking-wider text-black shadow-sm transition hover:bg-green-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+              !user && "bg-indigo-600 text-white hover:bg-indigo-500",
+            )}
+            disabled={org.isMember || !user}
             onClick={() => handleJoin()}
           >
-            Join Organization
+            {user ? "Join" : "Sign in to join"}
           </button>
         </div>
       )}
