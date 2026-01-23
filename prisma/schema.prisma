@@ -73,6 +73,8 @@ model Organization {
   memberships      Membership[]
   events           Event[]
   private          Boolean      @default(false)
+  image            String?
+  description      String?
 
   @@map("organization")
 }
