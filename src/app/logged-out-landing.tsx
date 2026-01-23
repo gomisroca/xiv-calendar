@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 
 export function DiscordIcon() {
   return (
@@ -42,6 +43,13 @@ export default function LoggedOutLanding() {
           <span className="text-sm text-slate-500">
             No extra accounts · One click
           </span>
+
+          <Link
+            href="/docs/getting-started"
+            className="rounded-lg border px-5 py-2.5 text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-950"
+          >
+            How it works
+          </Link>
         </div>
       </div>
       <div className="pointer-events-none rounded-xl bg-white p-6 shadow-sm dark:bg-black">
