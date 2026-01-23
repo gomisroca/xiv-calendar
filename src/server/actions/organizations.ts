@@ -207,24 +207,13 @@ export async function getUserOrganizations(): Promise<
 
 export async function getPublicOrganizations(): Promise<
   ActionResult<
-    (Pick<Organization, "id" | "name" | "slug"> & { isMember: boolean })[]
+    (Pick<Organization, "id" | "name" | "slug"> & {
+      totalMembers: number;
+      isMember: boolean;
+    })[]
   >
 > {
   const userCheck = await checkUser();
-
-  const countSnippet = userCheck.success
-    ? {
-        _count: {
-          select: {
-            memberships: {
-              where: {
-                userId: userCheck.data.id,
-              },
-            },
-          },
-        },
-      }
-    : undefined;
 
   try {
     const organizations = await db.organization.findMany({
@@ -235,7 +224,22 @@ export async function getPublicOrganizations(): Promise<
         id: true,
         name: true,
         slug: true,
-        ...countSnippet,
+        _count: {
+          select: {
+            memberships: true,
+          },
+        },
+        memberships: userCheck.success
+          ? {
+              where: {
+                userId: userCheck.data.id,
+              },
+              select: {
+                userId: true,
+              },
+              take: 1,
+            }
+          : false,
       },
     });
 
@@ -243,7 +247,8 @@ export async function getPublicOrganizations(): Promise<
       id: org.id,
       name: org.name,
       slug: org.slug,
-      isMember: org._count?.memberships > 0,
+      totalMembers: org._count.memberships,
+      isMember: userCheck.success ? org.memberships.length > 0 : false,
     }));
 
     return {
