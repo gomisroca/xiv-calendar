@@ -2,6 +2,7 @@
 
 import { joinOrganization } from "@/server/actions/organizations";
 import type { Organization, User } from "generated/prisma";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -11,7 +12,10 @@ export function OrgCard({
   org,
   user,
 }: {
-  org: Pick<Organization, "id" | "name" | "slug"> & { isMember: boolean };
+  org: Pick<Organization, "id" | "name" | "slug"> & {
+    totalMembers: number;
+    isMember: boolean;
+  };
   user: User | null;
 }) {
   const [status, setStatus] = useState<boolean>(org.isMember);
@@ -51,37 +55,44 @@ export function OrgCard({
   return (
     <div
       key={org.id}
-      className="rounded-lg bg-white p-4 shadow-sm dark:bg-black"
+      className="rounded-lg bg-white p-1 shadow-sm dark:bg-black"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Link href={`/orgs/${org.slug}`}>
-              <h3 className="font-medium">{org.name}</h3>
-            </Link>
-          </div>
+      <Link
+        href={`/orgs/${org.slug}`}
+        className="flex items-start justify-start gap-4 rounded p-2 transition hover:bg-slate-200 dark:hover:bg-slate-900"
+      >
+        <Image
+          src={"https://picsum.photos/200"}
+          alt={org.name}
+          width={48}
+          height={48}
+          className="rounded"
+        />
+        <div className="flex flex-col">
+          <h3 className="font-medium">{org.name}</h3>
+          <p className="text-sm text-slate-500">
+            {org.totalMembers} {org.totalMembers === 1 ? "member" : "members"}
+          </p>
         </div>
-        {org.isMember && (
-          <span className="rounded px-2 py-1 text-xs font-medium">
-            Already a member
-          </span>
-        )}
-      </div>
-      {!org.isMember && (
-        <div className="mt-4">
+      </Link>
+      <div className="mt-2 flex items-center justify-center">
+        {!org.isMember ? (
           <button
             type="button"
             className={twMerge(
-              "cursor-pointer rounded bg-green-500 px-3 py-1 font-semibold tracking-wider text-black shadow-sm transition hover:bg-green-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
-              !user && "bg-indigo-600 text-white hover:bg-indigo-500",
+              "cursor-pointer rounded bg-indigo-600 px-3 py-1 font-semibold tracking-wider text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
             )}
             disabled={org.isMember || !user}
             onClick={() => handleJoin()}
           >
             {user ? "Join" : "Sign in to join"}
           </button>
-        </div>
-      )}
+        ) : (
+          <span className="pointer-events-none rounded bg-slate-200 px-3 py-1 font-semibold dark:bg-slate-900">
+            Already a member
+          </span>
+        )}
+      </div>
       {error && <span className="ml-2 text-red-500">{error}</span>}
     </div>
   );
