@@ -16,7 +16,6 @@ export const env = createEnv({
     ),
     DISCORD_CLIENT_ID: z.string(),
     DISCORD_CLIENT_SECRET: z.string(),
-    DISCORD_WEBHOOK_URL: z.string().url(), // TO BE REMOVEDV
     BOT_SECRET: z.string(),
     BOT_URL: z.string().url(),
     DATABASE_URL: z.string().url(),
@@ -35,7 +34,6 @@ export const env = createEnv({
     AUTH_URL: process.env.AUTH_URL,
     DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
     DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET,
-    DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL, // TO BE REMOVED
     BOT_SECRET: process.env.BOT_SECRET,
     BOT_URL: process.env.BOT_URL,
     DATABASE_URL: process.env.DATABASE_URL,
