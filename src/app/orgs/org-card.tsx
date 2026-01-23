@@ -75,10 +75,10 @@ export function OrgCard({
           </p>
         </div>
       </Link>
-      <div className="mt-2 flex items-center justify-center">
+      <div className="my-2 flex items-center justify-center">
         <span className="text-sm">{org.description ?? "No description"}</span>
       </div>
-      <div className="mt-2 flex items-center justify-center">
+      <div className="mb-1 flex items-center justify-center">
         {!org.isMember ? (
           <button
             type="button"
