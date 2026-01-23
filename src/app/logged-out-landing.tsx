@@ -28,7 +28,7 @@ export function DiscordButton() {
   );
 }
 
-export default function LandingPage() {
+export default function LoggedOutLanding() {
   return (
     <>
       <div>

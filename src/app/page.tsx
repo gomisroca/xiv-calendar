@@ -1,13 +1,17 @@
 import { auth } from "@/server/auth";
-import { redirect } from "next/navigation";
-import LandingPage from "./landing";
+import Dashboard from "./dashboard";
+import LoggedOutLanding from "./logged-out-landing";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
   const session = await auth();
 
   if (session?.user) {
-    redirect("/dashboard");
+    return <Dashboard searchParams={searchParams} />;
   }
 
-  return <LandingPage />;
+  return <LoggedOutLanding />;
 }

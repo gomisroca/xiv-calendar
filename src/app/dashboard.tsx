@@ -1,5 +1,5 @@
 import { unwrap } from "@/utils/actions";
-import RSVPButtons from "../orgs/[slug]/[eventId]/rsvp-buttons";
+import RSVPButtons from "./orgs/[slug]/[eventId]/rsvp-buttons";
 import { getUserEvents, type UserEvent } from "@/server/actions/events";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
@@ -148,7 +148,7 @@ function DashboardFilters({ active }: { active: string }) {
       ].map(({ key, label }) => (
         <Link
           key={key}
-          href={`/dashboard?filter=${key}`}
+          href={`?filter=${key}`}
           className={twMerge(
             "rounded-md bg-black/50 px-3 py-1 text-xs uppercase transition hover:bg-black/70 dark:bg-white/10 dark:hover:bg-white/20",
             active === key

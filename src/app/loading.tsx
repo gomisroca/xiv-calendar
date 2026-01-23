@@ -8,7 +8,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Main card */}
-      <div className="rounded-xl border bg-white p-8 shadow-sm dark:bg-black">
+      <div className="rounded-xl bg-white p-8 shadow-sm dark:bg-black">
         <div className="h-6 w-56 rounded bg-slate-200 dark:bg-slate-800" />
         <div className="mt-3 h-4 w-80 rounded bg-slate-200 dark:bg-slate-800" />
 
