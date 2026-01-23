@@ -207,7 +207,7 @@ export async function getUserOrganizations(): Promise<
 
 export async function getPublicOrganizations(): Promise<
   ActionResult<
-    (Pick<Organization, "id" | "name" | "slug"> & {
+    (Pick<Organization, "id" | "name" | "slug" | "image" | "description"> & {
       totalMembers: number;
       isMember: boolean;
     })[]
@@ -224,6 +224,8 @@ export async function getPublicOrganizations(): Promise<
         id: true,
         name: true,
         slug: true,
+        image: true,
+        description: true,
         _count: {
           select: {
             memberships: true,
@@ -247,6 +249,8 @@ export async function getPublicOrganizations(): Promise<
       id: org.id,
       name: org.name,
       slug: org.slug,
+      image: org.image,
+      description: org.description,
       totalMembers: org._count.memberships,
       isMember: userCheck.success ? org.memberships.length > 0 : false,
     }));

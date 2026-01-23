@@ -12,7 +12,7 @@ export function OrgCard({
   org,
   user,
 }: {
-  org: Pick<Organization, "id" | "name" | "slug"> & {
+  org: Pick<Organization, "id" | "name" | "slug" | "image" | "description"> & {
     totalMembers: number;
     isMember: boolean;
   };
@@ -62,7 +62,7 @@ export function OrgCard({
         className="flex items-start justify-start gap-4 rounded p-2 transition hover:bg-slate-200 dark:hover:bg-slate-900"
       >
         <Image
-          src={"https://picsum.photos/200"}
+          src={org.image ?? "/placeholder.jpg"}
           alt={org.name}
           width={48}
           height={48}
@@ -75,6 +75,9 @@ export function OrgCard({
           </p>
         </div>
       </Link>
+      <div className="mt-2 flex items-center justify-center">
+        <span className="text-sm">{org.description ?? "No description"}</span>
+      </div>
       <div className="mt-2 flex items-center justify-center">
         {!org.isMember ? (
           <button
