@@ -10,10 +10,6 @@ const config = {
         port: "",
         pathname: "/avatars/**",
       },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
     ],
   },
 };
