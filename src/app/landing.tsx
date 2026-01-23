@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 
-function DiscordIcon() {
+export function DiscordIcon() {
   return (
     <svg
       width="20"
@@ -36,7 +36,6 @@ export default function LandingPage() {
         <p className="mb-8 text-lg">
           RSVP to events directly from Discord or the web.
         </p>
-
         <div className="mt-10 flex flex-col items-center gap-4">
           <DiscordButton />
 

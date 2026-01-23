@@ -1,7 +1,8 @@
 "use client";
 
 import ThemeToggle from "@/app/_components/ui/theme-changer";
-import { LogIn, LogOut } from "lucide-react";
+import { DiscordIcon } from "@/app/landing";
+import { LogOut } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -63,7 +64,7 @@ function NavbarControls() {
           className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm transition hover:bg-indigo-500 hover:shadow-md"
           aria-label="Login with Discord"
         >
-          <LogIn className="h-5 w-5" />
+          <DiscordIcon />
         </button>
       )}
 
