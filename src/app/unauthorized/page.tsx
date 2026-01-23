@@ -16,17 +16,10 @@ export default async function UnauthorizedPage() {
 
       <div className="mt-10 flex flex-col items-center gap-4">
         <Link
-          href="/dashboard"
-          className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          Back to dashboard
-        </Link>
-
-        <Link
           href="/"
           className="rounded-lg border px-5 py-2.5 text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300"
         >
-          Go home
+          Back to homepage
         </Link>
       </div>
     </div>

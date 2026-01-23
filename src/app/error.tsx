@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 
 export default function GlobalError({
   error,
@@ -14,8 +13,6 @@ export default function GlobalError({
   useEffect(() => {
     console.error(error);
   }, [error]);
-
-  const session = useSession();
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-linear-to-b from-slate-100 to-white px-6 dark:from-slate-900 dark:to-black">
@@ -38,21 +35,12 @@ export default function GlobalError({
             Try again
           </button>
 
-          {session?.data?.user ? (
-            <Link
-              href="/dashboard"
-              className="rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500"
-            >
-              Go to dashboard
-            </Link>
-          ) : (
-            <Link
-              href="/"
-              className="rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500"
-            >
-              Go to homepage
-            </Link>
-          )}
+          <Link
+            href="/"
+            className="rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500"
+          >
+            Back to homepage
+          </Link>
         </div>
       </div>
     </main>
