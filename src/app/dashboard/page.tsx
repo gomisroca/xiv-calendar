@@ -55,7 +55,7 @@ function EmptyDashboard() {
         </Link>
 
         <Link
-          href="/orgs/browse"
+          href="/orgs"
           className="rounded-lg bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-500"
         >
           Browse organizations
