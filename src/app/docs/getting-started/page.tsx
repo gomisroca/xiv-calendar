@@ -55,6 +55,16 @@ export default async function GettingStartedPage() {
             number={3}
             description="Post events to the organization's calendar and Discord."
           />
+          <p className="border-t pt-2 text-start text-sm text-slate-500 dark:text-slate-400">
+            For more information, please check out the
+            <Link
+              href="/docs/organizers"
+              className="ml-1 text-black underline dark:text-white"
+            >
+              Organizer’s Handbook
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>
