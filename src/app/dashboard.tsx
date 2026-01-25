@@ -6,6 +6,11 @@ import { type EventStatus } from "generated/prisma";
 import { twMerge } from "tailwind-merge";
 import { redirect } from "next/navigation";
 import { checkUser } from "@/server/auth/permissions";
+import {
+  getUserOrganizations,
+  type OrganizationWithRole,
+} from "@/server/actions/organizations";
+import Image from "next/image";
 
 const STATUS_BADGE: Record<EventStatus, { label: string; className: string }> =
   {
@@ -138,6 +143,37 @@ function EventCard({ event }: { event: UserEvent }) {
   );
 }
 
+function OrganizationCard({ org }: { org: OrganizationWithRole }) {
+  return (
+    <div
+      key={org.id}
+      className="rounded-lg bg-white p-1 shadow-sm dark:bg-black"
+    >
+      <Link
+        href={`/orgs/${org.slug}`}
+        className="flex items-start justify-start gap-4 rounded p-2 transition hover:bg-slate-200 dark:hover:bg-slate-900"
+      >
+        <Image
+          src={org.image ?? "/placeholder.jpg"}
+          alt={org.name}
+          width={48}
+          height={48}
+          className="rounded"
+        />
+        <div className="flex flex-col">
+          <h3 className="font-medium">{org.name}</h3>
+          <p className="text-sm text-slate-500">
+            {org.totalMembers} {org.totalMembers === 1 ? "member" : "members"}
+          </p>
+        </div>
+      </Link>
+      <div className="my-2 flex items-center justify-center">
+        <span className="text-sm">{org.description ?? "No description"}</span>
+      </div>
+    </div>
+  );
+}
+
 function DashboardFilters({ active }: { active: string }) {
   return (
     <div className="mt-6 mb-2 flex gap-2">
@@ -176,6 +212,7 @@ export default async function Dashboard({
     filter === "past" ? "PAST" : filter === "all" ? "ALL" : "UPCOMING";
 
   const events = unwrap(await getUserEvents({ filter: actionFilter }));
+  const organizations = unwrap(await getUserOrganizations());
 
   return (
     <div>
@@ -199,6 +236,17 @@ export default async function Dashboard({
         </ul>
       ) : (
         <EmptyDashboard />
+      )}
+
+      {/* Organization list */}
+      {organizations.length > 0 && (
+        <ul className="flex flex-col items-center justify-center gap-2">
+          {organizations.map((org) => (
+            <li key={org.id}>
+              <OrganizationCard org={org} />
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

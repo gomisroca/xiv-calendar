@@ -1,4 +1,5 @@
 import "./src/env.js";
+import { env } from "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -9,6 +10,12 @@ const config = {
         hostname: "cdn.discordapp.com",
         port: "",
         pathname: "/avatars/**",
+      },
+      {
+        protocol: "https",
+        hostname: env.UPLOADTHING_CDN,
+        port: "",
+        pathname: "/**",
       },
     ],
   },

@@ -16,6 +16,7 @@ jobs:
       BOT_URL: ${{ secrets.BOT_URL }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
