@@ -10,6 +10,9 @@ import { createDefaultRoles, getRoleByName } from "@/utils/permissions";
 const CreateOrganizationSchema = z.object({
   name: z.string().min(1, "Organization name cannot be empty"),
   discordChannelId: z.string().min(1, "Discord channel ID is required"),
+  description: z.string().optional(),
+  picture: z.string().url().optional(),
+  hidden: z.boolean(),
 });
 
 async function generateSlug(base: string) {
@@ -43,7 +46,7 @@ export async function createOrganization(
     };
   }
 
-  const { name, discordChannelId } = parsed.data;
+  const { name, discordChannelId, description, picture, hidden } = parsed.data;
 
   try {
     const slugBase = name.toLowerCase().trim().replace(/\s+/g, "-");
@@ -52,7 +55,14 @@ export async function createOrganization(
 
     await db.$transaction(async (trx) => {
       const org = await trx.organization.create({
-        data: { name, slug, discordChannelId },
+        data: {
+          name,
+          slug,
+          discordChannelId,
+          description: description ?? undefined,
+          image: picture ?? undefined,
+          private: hidden,
+        },
       });
 
       await createDefaultRoles(trx, org.id);
@@ -152,6 +162,9 @@ export type OrganizationWithRole = {
   id: string;
   name: string;
   slug: string;
+  image: string | null;
+  description: string | null;
+  totalMembers: number;
   role: string;
   permissions: Permission[];
 };
@@ -169,7 +182,17 @@ export async function getUserOrganizations(): Promise<
           some: { userId: userCheck.data.id },
         },
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        description: true,
+        _count: {
+          select: {
+            memberships: true,
+          },
+        },
         memberships: {
           where: { userId: userCheck.data.id },
           include: { role: true },
@@ -186,6 +209,9 @@ export async function getUserOrganizations(): Promise<
         id: org.id,
         name: org.name,
         slug: org.slug,
+        image: org.image,
+        description: org.description,
+        totalMembers: org._count.memberships,
         role: org.memberships[0]!.role.name,
         permissions: org.memberships[0]!.role.permissions,
       };
