@@ -66,7 +66,7 @@ export function OrgCard({
           alt={org.name}
           width={48}
           height={48}
-          className="rounded"
+          className="h-12 w-12 rounded object-cover"
         />
         <div className="flex flex-col">
           <h3 className="font-medium">{org.name}</h3>
