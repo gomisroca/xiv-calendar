@@ -1,5 +1,8 @@
 import "@/styles/globals.css";
 
+import { NextSSRPlugin as UploadThingSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
+import { UploadThingRouter } from "@/app/api/uploadthing/core";
 import { type Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { Geist } from "next/font/google";
@@ -29,6 +32,9 @@ export default async function RootLayout({
         <div className="fixed inset-0 -z-10 bg-linear-to-b/shorter from-indigo-100 via-sky-200 to-white dark:from-[#00162f] dark:via-[#012538] dark:to-black" />
         <div className="pointer-events-none fixed inset-0 -z-10 bg-black/10" />
 
+        <UploadThingSSRPlugin
+          routerConfig={extractRouterConfig(UploadThingRouter)}
+        />
         <SessionProvider session={session}>
           <ThemeProvider attribute="class">
             <Navbar />
