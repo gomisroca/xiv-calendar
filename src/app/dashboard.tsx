@@ -158,7 +158,7 @@ function OrganizationCard({ org }: { org: OrganizationWithRole }) {
           alt={org.name}
           width={48}
           height={48}
-          className="rounded"
+          className="h-12 w-12 rounded object-cover"
         />
         <div className="flex flex-col">
           <h3 className="font-medium">{org.name}</h3>
@@ -240,13 +240,17 @@ export default async function Dashboard({
 
       {/* Organization list */}
       {organizations.length > 0 && (
-        <ul className="flex flex-col items-center justify-center gap-2">
-          {organizations.map((org) => (
-            <li key={org.id}>
-              <OrganizationCard org={org} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <h2 className="mt-5 text-xl font-medium">Your Organizations</h2>
+
+          <ul className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {organizations.map((org) => (
+              <li key={org.id}>
+                <OrganizationCard org={org} />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
