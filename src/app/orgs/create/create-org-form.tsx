@@ -4,12 +4,16 @@ import { createOrganization } from "@/server/actions/organizations";
 import { unwrap } from "@/utils/actions";
 import { useState } from "react";
 import { useUploadThing } from "@/utils/uploadthing";
+import Link from "next/link";
+import { env } from "process";
+import { DiscordIcon } from "@/app/logged-out-landing";
 
 export default function CreateOrganizationForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showDiscordBotLink, setShowDiscordBotLink] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const { startUpload } = useUploadThing("projectPicture"); // Upload thing hook
+  const { startUpload } = useUploadThing("projectPicture");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +49,7 @@ export default function CreateOrganizationForm() {
 
       const message = unwrap(result);
       setMessage(message);
+      setShowDiscordBotLink(true);
 
       form.reset();
       setFile(null);
@@ -142,6 +147,17 @@ export default function CreateOrganizationForm() {
       >
         {loading ? "Creating…" : "Create Organization"}
       </button>
+
+      {/* Discord Bot Link */}
+      {showDiscordBotLink && (
+        <Link
+          href={`https://discord.com/oauth2/authorize?client_id=${env.BOT_ID}&permissions=17600775989312&integration_type=0&scope=bot`}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <DiscordIcon />
+          Invite Bot to Get Started
+        </Link>
+      )}
 
       {/* Message */}
       {message && <p className="text-sm text-slate-500">{message}</p>}
