@@ -62,6 +62,7 @@ export async function createOrganization(
           description: description ?? undefined,
           image: picture ?? undefined,
           private: hidden,
+          createdById: userCheck.data.id,
         },
       });
 
