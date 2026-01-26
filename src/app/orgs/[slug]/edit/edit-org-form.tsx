@@ -61,7 +61,7 @@ export default function EditOrganizationForm({
       setMessage(
         err instanceof Error
           ? err.message
-          : "Something went wrong updating the event",
+          : "Something went wrong updating the organization",
       );
     } finally {
       setLoading(false);
