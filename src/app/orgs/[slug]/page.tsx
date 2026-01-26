@@ -36,7 +36,7 @@ export default async function OrgView({ params }: { params: Params }) {
   return (
     <>
       {/* Admin controls */}
-      {org.createdBy.id === userCheck.data.id && (
+      {org.createdBy.id === userCheck.data.id && ( // TODO: Check if user has role with permissions
         <div className="flex gap-2">
           <Link
             href={`https://discord.com/oauth2/authorize?client_id=${env.BOT_ID}&permissions=17600775989312&integration_type=0&scope=bot`}
