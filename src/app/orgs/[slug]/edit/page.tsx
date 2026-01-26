@@ -2,10 +2,11 @@ import { db } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import {
   checkUser,
-  hasPermission,
   requireOrgMember,
+  requirePermission,
 } from "@/server/auth/permissions";
 import EditOrganizationForm from "./edit-org-form";
+import { Permission } from "generated/prisma";
 
 type Params = Promise<{ slug: string }>;
 export default async function EditOrganizationPage({
@@ -27,12 +28,12 @@ export default async function EditOrganizationPage({
   const membership = await requireOrgMember(userCheck.data.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
-  const allowed = await hasPermission({
+  const permissions = await requirePermission({
     userId: userCheck.data.id,
     orgId: org.id,
-    permission: "ORG_UPDATE",
+    permission: Permission.ORG_UPDATE,
   });
-  if (!allowed) return redirect("/unauthorized");
+  if (!permissions.success) return redirect("/unauthorized");
 
   return (
     <div className="mx-auto mt-8 max-w-md">

@@ -2,9 +2,9 @@
 
 import { z } from "zod";
 import { db } from "@/server/db";
-import { type Organization, type Permission } from "generated/prisma";
+import { Permission, type Organization } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
-import { checkUser, hasPermission } from "../auth/permissions";
+import { checkUser, requirePermission } from "../auth/permissions";
 import { createDefaultRoles, getRoleByName } from "@/utils/permissions";
 
 const CreateOrganizationSchema = z.object({
@@ -125,18 +125,13 @@ export async function updateOrganization(
         slug = await generateSlug(slugBase);
       }
 
-      const allowed = await hasPermission({
+      const permissions = await requirePermission({
         userId: userCheck.data.id,
         orgId,
-        permission: "ORG_UPDATE",
+        permission: Permission.ORG_UPDATE,
       });
-
-      if (!allowed) {
-        return {
-          success: false,
-          error: "You do not have permission to update this organization",
-          code: "FORBIDDEN",
-        };
+      if (!permissions.success) {
+        return permissions;
       }
 
       await db.organization.update({
