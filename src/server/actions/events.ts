@@ -155,8 +155,6 @@ export async function createEvent(
 
     const { channelId, messageId } = (await botRes.json()) as PostEventResponse;
 
-    console.log(channelId, messageId);
-
     await db.event.update({
       where: { id: event.id },
       data: {
@@ -179,8 +177,139 @@ export async function createEvent(
   }
 }
 
+const UpdateEventSchema = z.object({
+  orgId: z.string(),
+  name: z.string().min(1, "Event name is required"),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date().optional(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+});
+
+export async function updateEvent(
+  eventId: string,
+  input: unknown,
+): Promise<ActionResult<string>> {
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
+
+  const parsed = UpdateEventSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid event data",
+      code: "VALIDATION",
+    };
+  }
+
+  const { orgId, name, startsAt, endsAt, description, location } = parsed.data;
+
+  const permissions = await requirePermission({
+    userId: userCheck.data.id,
+    orgId,
+    permission: Permission.EVENT_UPDATE,
+  });
+  if (!permissions.success) {
+    return permissions;
+  }
+
+  if (endsAt && endsAt < startsAt) {
+    return {
+      success: false,
+      error: "End date must be after start date",
+      code: "VALIDATION",
+    };
+  }
+
+  try {
+    const event = await db.$transaction(async (trx) => {
+      const event = await trx.event.update({
+        where: {
+          id: eventId,
+        },
+        data: {
+          name,
+          startsAt,
+          endsAt,
+          description,
+          location,
+        },
+      });
+
+      return event;
+    });
+
+    const fullEvent = await db.event.findUnique({
+      where: { id: event.id },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        location: true,
+        startsAt: true,
+        endsAt: true,
+        orgId: true,
+        createdBy: { select: { name: true } },
+        discordChannelId: true,
+        discordMessageId: true,
+      },
+    });
+    if (!fullEvent) return { success: false, error: "Failed to update event" };
+
+    const attendance = await getEventAttendanceCounts(
+      fullEvent.id,
+      fullEvent.orgId,
+    );
+
+    const eventForDiscord = {
+      id: fullEvent.id,
+      name: fullEvent.name,
+      description: fullEvent.description,
+      location: fullEvent.location,
+      startsAt: fullEvent.startsAt,
+      endsAt: fullEvent.endsAt,
+      createdByName: fullEvent.createdBy.name,
+      attendance,
+    };
+
+    const embed = renderEventEmbed(eventForDiscord);
+
+    const botRes = await fetch(`${env.BOT_URL}/update-event`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-bot-secret": env.BOT_SECRET,
+      },
+      body: JSON.stringify({
+        messageId: fullEvent.discordMessageId,
+        channelId: fullEvent.discordChannelId,
+        eventId: fullEvent.id,
+        eventStartTime: fullEvent.startsAt,
+        embed,
+      }),
+    });
+
+    if (!botRes.ok) {
+      throw new Error("Failed to update event on Discord");
+    }
+
+    return {
+      success: true,
+      data: "Event updated successfully",
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to update event",
+      code: "UNKNOWN",
+    };
+  }
+}
+
 export type EventWithAttendance = {
   id: string;
+  orgId: string;
   name: string;
   startsAt: Date;
   endsAt: Date | null;
@@ -260,6 +389,7 @@ export async function getOrganizationEvents({
     const mapped: EventWithAttendance[] = organization?.events.map((event) => {
       return {
         id: event.id,
+        orgId: event.orgId,
         name: event.name,
         startsAt: event.startsAt,
         endsAt: event.endsAt,
@@ -312,6 +442,7 @@ export async function getSingleEvent({
         id: eventId,
       },
       include: {
+        org: { select: { id: true } },
         createdBy: {
           select: {
             id: true,
@@ -342,6 +473,7 @@ export async function getSingleEvent({
 
     const mapped: EventWithAttendance = {
       id: event.id,
+      orgId: event.org.id,
       name: event.name,
       startsAt: event.startsAt,
       endsAt: event.endsAt,
