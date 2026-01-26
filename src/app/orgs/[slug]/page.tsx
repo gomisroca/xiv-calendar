@@ -3,7 +3,11 @@ import { db } from "@/server/db";
 import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import Calendar from "./calendar";
-import { checkUser, requireOrgMember } from "@/server/auth/permissions";
+import {
+  checkUser,
+  hasPermission,
+  requireOrgMember,
+} from "@/server/auth/permissions";
 import Link from "next/link";
 import { DiscordIcon } from "@/app/logged-out-landing";
 import { env } from "@/env";
@@ -31,12 +35,18 @@ export default async function OrgView({ params }: { params: Params }) {
   const membership = await requireOrgMember(userCheck.data.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
+  const isAdmin = await hasPermission({
+    userId: userCheck.data.id,
+    orgId: org.id,
+    permission: "ORG_UPDATE",
+  });
+
   const events = unwrap(await getOrganizationEvents({ orgId: org.id }));
 
   return (
     <>
       {/* Admin controls */}
-      {org.createdBy.id === userCheck.data.id && ( // TODO: Check if user has role with permissions
+      {isAdmin && (
         <div className="flex gap-2">
           <Link
             href={`https://discord.com/oauth2/authorize?client_id=${env.BOT_ID}&permissions=17600775989312&integration_type=0&scope=bot`}
