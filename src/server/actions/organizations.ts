@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/server/db";
 import { type Organization, type Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
-import { checkUser } from "../auth/permissions";
+import { checkUser, hasPermission } from "../auth/permissions";
 import { createDefaultRoles, getRoleByName } from "@/utils/permissions";
 
 const CreateOrganizationSchema = z.object({
@@ -88,6 +88,79 @@ export async function createOrganization(
     return {
       success: false,
       error: "Failed to create organization",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+export async function updateOrganization(
+  orgId: string,
+  input: unknown,
+): Promise<ActionResult<string>> {
+  const userCheck = await checkUser();
+  if (!userCheck.success) return userCheck;
+
+  const parsed = CreateOrganizationSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+      code: "VALIDATION",
+    };
+  }
+
+  const { name, discordChannelId, description, picture, hidden } = parsed.data;
+
+  try {
+    await db.$transaction(async (trx) => {
+      const org = await trx.organization.findUnique({
+        where: { id: orgId },
+        select: { name: true },
+      });
+      if (!org) throw new Error("Invariant: Organization not found");
+
+      let slug: string | undefined;
+      if (name !== org.name) {
+        const slugBase = name.toLowerCase().trim().replace(/\s+/g, "-");
+        slug = await generateSlug(slugBase);
+      }
+
+      const allowed = await hasPermission({
+        userId: userCheck.data.id,
+        orgId,
+        permission: "ORG_UPDATE",
+      });
+
+      if (!allowed) {
+        return {
+          success: false,
+          error: "You do not have permission to update this organization",
+          code: "FORBIDDEN",
+        };
+      }
+
+      await db.organization.update({
+        where: { id: orgId },
+        data: {
+          name,
+          discordChannelId,
+          description,
+          image: picture,
+          private: hidden,
+          ...(slug && { slug }),
+        },
+      });
+    });
+
+    return {
+      success: true,
+      data: "Organization updated successfully.",
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to update organization",
       code: "UNKNOWN",
     };
   }
