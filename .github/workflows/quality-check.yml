@@ -18,6 +18,7 @@ jobs:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       DIRECT_URL: ${{ secrets.DIRECT_URL }}
       UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
+      UPLOADTHING_CDN: ${{ secrets.UPLOADTHING_CDN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
