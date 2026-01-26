@@ -204,15 +204,6 @@ export async function updateEvent(
 
   const { orgId, name, startsAt, endsAt, description, location } = parsed.data;
 
-  const permissions = await requirePermission({
-    userId: userCheck.data.id,
-    orgId,
-    permission: Permission.EVENT_UPDATE,
-  });
-  if (!permissions.success) {
-    return permissions;
-  }
-
   if (endsAt && endsAt < startsAt) {
     return {
       success: false,
@@ -222,8 +213,24 @@ export async function updateEvent(
   }
 
   try {
-    const event = await db.$transaction(async (trx) => {
-      const event = await trx.event.update({
+    await db.$transaction(async (trx) => {
+      const event = await trx.event.findUnique({
+        where: { id: eventId },
+      });
+      if (!event) throw new Error("Invariant: Event not found");
+
+      if (userCheck.data.id !== event.createdById) {
+        const permissions = await requirePermission({
+          userId: userCheck.data.id,
+          orgId,
+          permission: Permission.EVENT_UPDATE,
+        });
+        if (!permissions.success) {
+          return permissions;
+        }
+      }
+
+      await trx.event.update({
         where: {
           id: eventId,
         },
@@ -235,12 +242,10 @@ export async function updateEvent(
           location,
         },
       });
-
-      return event;
     });
 
     const fullEvent = await db.event.findUnique({
-      where: { id: event.id },
+      where: { id: eventId },
       select: {
         id: true,
         name: true,
@@ -254,6 +259,7 @@ export async function updateEvent(
         discordMessageId: true,
       },
     });
+
     if (!fullEvent) return { success: false, error: "Failed to update event" };
 
     const attendance = await getEventAttendanceCounts(
