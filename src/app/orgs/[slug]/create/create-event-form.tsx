@@ -24,6 +24,8 @@ export function CreateEventForm({ org }: CreateEventFormProps) {
     const title = (formData.get("name") as string)?.trim();
     const startsAt = formData.get("startsAt") as string;
     const endsAt = formData.get("endsAt") as string | null;
+    const description = formData.get("description") as string;
+    const location = formData.get("location") as string;
 
     try {
       const result = await createEvent({
@@ -32,6 +34,8 @@ export function CreateEventForm({ org }: CreateEventFormProps) {
         name: title,
         startsAt: new Date(startsAt),
         endsAt: endsAt ? new Date(endsAt) : undefined,
+        description,
+        location,
       });
 
       const message = unwrap(result);
@@ -88,6 +92,28 @@ export function CreateEventForm({ org }: CreateEventFormProps) {
           type="datetime-local"
           name="endsAt"
           className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-800 dark:bg-black"
+        />
+      </div>
+
+      {/* Description */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium">Description</label>
+        <input
+          type="text"
+          name="description"
+          placeholder="A fun event for the whole organization"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-800 dark:bg-black"
+        />
+      </div>
+
+      {/* Location */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium">Location</label>
+        <input
+          type="text"
+          name="location"
+          placeholder="The event location"
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-800 dark:bg-black"
         />
       </div>
 
