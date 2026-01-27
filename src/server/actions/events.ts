@@ -5,7 +5,7 @@ import { db } from "@/server/db";
 import { EventStatus, Permission } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
 import {
-  checkUser,
+  readUser,
   requireEventOrgMember,
   requireOrgMember,
   requirePermission,
@@ -31,8 +31,9 @@ const CreateEventSchema = z.object({
 export async function createEvent(
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const parsed = CreateEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -54,13 +55,11 @@ export async function createEvent(
   } = parsed.data;
 
   const permissions = await requirePermission({
-    userId: userCheck.data.id,
+    userId: user.id,
     orgId: orgId,
     permission: Permission.EVENT_CREATE,
   });
-  if (!permissions.success) {
-    return permissions;
-  }
+  if (!permissions.success) return permissions;
 
   if (endsAt && endsAt < startsAt) {
     return {
@@ -78,7 +77,7 @@ export async function createEvent(
           startsAt,
           endsAt,
           orgId,
-          createdById: userCheck.data.id,
+          createdById: user.id,
           description,
           location,
         },
@@ -87,7 +86,7 @@ export async function createEvent(
       await trx.eventAttendance.create({
         data: {
           eventId: event.id,
-          userId: userCheck.data.id,
+          userId: user.id,
           status: EventStatus.ATTENDING,
         },
       });
@@ -190,8 +189,9 @@ export async function updateEvent(
   eventId: string,
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const parsed = UpdateEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -219,9 +219,9 @@ export async function updateEvent(
       });
       if (!event) throw new Error("Invariant: Event not found");
 
-      if (userCheck.data.id !== event.createdById) {
+      if (user.id !== event.createdById) {
         const permissions = await requirePermission({
-          userId: userCheck.data.id,
+          userId: user.id,
           orgId,
           permission: Permission.EVENT_UPDATE,
         });
@@ -337,10 +337,11 @@ export async function getOrganizationEvents({
 }: {
   orgId: string;
 }): Promise<ActionResult<EventWithAttendance[]>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
-  const membership = await requireOrgMember(userCheck.data.id, orgId);
+  const membership = await requireOrgMember(user.id, orgId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -350,7 +351,7 @@ export async function getOrganizationEvents({
       where: {
         id: orgId,
         memberships: {
-          some: { userId: userCheck.data.id },
+          some: { userId: user.id },
         },
       },
       include: {
@@ -434,10 +435,11 @@ export async function getSingleEvent({
 }: {
   eventId: string;
 }): Promise<ActionResult<EventWithAttendance>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
-  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
+  const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -524,8 +526,9 @@ const RSVPEventSchema = z.object({
 export async function rsvpToEvent(
   input: unknown,
 ): Promise<ActionResult<{ status: EventStatus }>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const parsed = RSVPEventSchema.safeParse(input);
   if (!parsed.success) {
@@ -538,7 +541,7 @@ export async function rsvpToEvent(
 
   const { eventId, status } = parsed.data;
 
-  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
+  const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) {
     return redirect("/unauthorized");
   }
@@ -557,7 +560,7 @@ export async function rsvpToEvent(
       where: {
         eventId_userId: {
           eventId,
-          userId: userCheck.data.id,
+          userId: user.id,
         },
       },
     });
@@ -579,13 +582,13 @@ export async function rsvpToEvent(
       where: {
         eventId_userId: {
           eventId,
-          userId: userCheck.data.id,
+          userId: user.id,
         },
       },
       update: { status },
       create: {
         eventId,
-        userId: userCheck.data.id,
+        userId: user.id,
         status,
       },
     });
@@ -685,8 +688,9 @@ export async function getUserEvents({
 }: {
   filter?: UserEventsFilter;
 } = {}): Promise<ActionResult<UserEvent[]>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const now = new Date();
 
@@ -704,7 +708,7 @@ export async function getUserEvents({
         org: {
           memberships: {
             some: {
-              userId: userCheck.data.id,
+              userId: user.id,
             },
           },
         },
@@ -734,7 +738,7 @@ export async function getUserEvents({
 
     const mapped: UserEvent[] = events.map((event) => {
       const myAttendance = event.eventAttendances.find(
-        (a) => a.userId === userCheck.data.id,
+        (a) => a.userId === user.id,
       );
 
       const counts = {

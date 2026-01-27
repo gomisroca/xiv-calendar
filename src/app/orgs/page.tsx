@@ -1,17 +1,21 @@
 import { getPublicOrganizations } from "@/server/actions/organizations";
 import { unwrap } from "@/utils/actions";
 import { OrgCard } from "./org-card";
-import { checkUser } from "@/server/auth/permissions";
+import { readUser } from "@/server/auth/permissions";
 
 export default async function OrgsPage() {
-  const userCheck = await checkUser();
+  const userResult = await readUser();
+
   const orgs = unwrap(await getPublicOrganizations());
 
   return (
     <ul>
       {orgs.map((org) => (
         <li key={org.id}>
-          <OrgCard org={org} user={userCheck.success ? userCheck.data : null} />
+          <OrgCard
+            org={org}
+            user={userResult.success ? userResult.data : null}
+          />
         </li>
       ))}
     </ul>

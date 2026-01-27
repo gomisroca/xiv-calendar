@@ -1,5 +1,6 @@
 import Modal from "@/app/_components/ui/modal";
-import { checkUser, requireEventOrgMember } from "@/server/auth/permissions";
+import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
+import { unwrap } from "@/utils/actions";
 import { getEventAttendanceUsers, maskAttendance } from "@/utils/events";
 import { redirect } from "next/navigation";
 
@@ -9,12 +10,11 @@ export default async function EventAttendanceModal({
 }: {
   params: Params;
 }) {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const { eventId } = await params;
 
-  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
+  const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
   const attendance = await getEventAttendanceUsers(eventId);

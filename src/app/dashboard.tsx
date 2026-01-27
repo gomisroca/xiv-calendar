@@ -4,8 +4,7 @@ import { getUserEvents, type UserEvent } from "@/server/actions/events";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
 import { twMerge } from "tailwind-merge";
-import { redirect } from "next/navigation";
-import { checkUser } from "@/server/auth/permissions";
+import { readUser } from "@/server/auth/permissions";
 import {
   getUserOrganizations,
   type OrganizationWithRole,
@@ -204,8 +203,7 @@ export default async function Dashboard({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const filter = (await searchParams).filter ?? "upcoming";
   const actionFilter =
@@ -217,9 +215,7 @@ export default async function Dashboard({
   return (
     <div>
       {/* Hero */}
-      <h1 className="text-2xl font-semibold">
-        Welcome back, {userCheck.data.name}
-      </h1>
+      <h1 className="text-2xl font-semibold">Welcome back, {user.name}</h1>
       <p className="mt-1">
         Events from your Discord servers, synced in real time.
       </p>

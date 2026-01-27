@@ -4,8 +4,8 @@ import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import Calendar from "./calendar";
 import {
-  checkUser,
   hasPermission,
+  readUser,
   requireOrgMember,
 } from "@/server/auth/permissions";
 import Link from "next/link";
@@ -17,8 +17,7 @@ type Params = Promise<{ slug: string }>;
 export default async function OrgView({ params }: { params: Params }) {
   const { slug } = await params;
 
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const org = await db.organization.findUnique({
     where: { slug },
@@ -32,11 +31,11 @@ export default async function OrgView({ params }: { params: Params }) {
 
   if (!org) notFound();
 
-  const membership = await requireOrgMember(userCheck.data.id, org.id);
+  const membership = await requireOrgMember(user.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
   const isAdmin = await hasPermission({
-    userId: userCheck.data.id,
+    userId: user.id,
     orgId: org.id,
     permission: "ORG_UPDATE",
   });

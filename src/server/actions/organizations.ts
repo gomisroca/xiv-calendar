@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/server/db";
 import { Permission, type Organization } from "generated/prisma";
 import type { ActionResult } from "@/utils/actions";
-import { checkUser, requirePermission } from "../auth/permissions";
+import { readUser, requirePermission } from "../auth/permissions";
 import { createDefaultRoles, getRoleByName } from "@/utils/permissions";
 
 const CreateOrganizationSchema = z.object({
@@ -34,8 +34,9 @@ async function generateSlug(base: string) {
 export async function createOrganization(
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const parsed = CreateOrganizationSchema.safeParse(input);
   if (!parsed.success) {
@@ -62,7 +63,7 @@ export async function createOrganization(
           description: description ?? undefined,
           image: picture ?? undefined,
           private: hidden,
-          createdById: userCheck.data.id,
+          createdById: user.id,
         },
       });
 
@@ -72,7 +73,7 @@ export async function createOrganization(
 
       await trx.membership.create({
         data: {
-          userId: userCheck.data.id,
+          userId: user.id,
           orgId: org.id,
           roleId: ownerRole.id,
         },
@@ -97,8 +98,9 @@ export async function updateOrganization(
   orgId: string,
   input: unknown,
 ): Promise<ActionResult<string>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   const parsed = CreateOrganizationSchema.safeParse(input);
   if (!parsed.success) {
@@ -126,7 +128,7 @@ export async function updateOrganization(
       }
 
       const permissions = await requirePermission({
-        userId: userCheck.data.id,
+        userId: user.id,
         orgId,
         permission: Permission.ORG_UPDATE,
       });
@@ -164,8 +166,9 @@ export async function updateOrganization(
 export async function joinOrganization(
   orgId: string,
 ): Promise<ActionResult<string>> {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   try {
     await db.$transaction(async (trx) => {
@@ -185,7 +188,7 @@ export async function joinOrganization(
         where: {
           orgId_userId: {
             orgId,
-            userId: userCheck.data.id,
+            userId: user.id,
           },
         },
       });
@@ -206,7 +209,7 @@ export async function joinOrganization(
 
       await trx.membership.create({
         data: {
-          userId: userCheck.data.id,
+          userId: user.id,
           orgId,
           roleId: memberRole.id,
         },
@@ -241,14 +244,15 @@ export type OrganizationWithRole = {
 export async function getUserOrganizations(): Promise<
   ActionResult<OrganizationWithRole[]>
 > {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return userCheck;
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
 
   try {
     const organizations = await db.organization.findMany({
       where: {
         memberships: {
-          some: { userId: userCheck.data.id },
+          some: { userId: user.id },
         },
       },
       select: {
@@ -263,7 +267,7 @@ export async function getUserOrganizations(): Promise<
           },
         },
         memberships: {
-          where: { userId: userCheck.data.id },
+          where: { userId: user.id },
           include: { role: true },
         },
       },
@@ -308,7 +312,7 @@ export async function getPublicOrganizations(): Promise<
     })[]
   >
 > {
-  const userCheck = await checkUser();
+  const userResult = await readUser();
 
   try {
     const organizations = await db.organization.findMany({
@@ -326,10 +330,10 @@ export async function getPublicOrganizations(): Promise<
             memberships: true,
           },
         },
-        memberships: userCheck.success
+        memberships: userResult.success
           ? {
               where: {
-                userId: userCheck.data.id,
+                userId: userResult.data.id,
               },
               select: {
                 userId: true,
@@ -347,7 +351,7 @@ export async function getPublicOrganizations(): Promise<
       image: org.image,
       description: org.description,
       totalMembers: org._count.memberships,
-      isMember: userCheck.success ? org.memberships.length > 0 : false,
+      isMember: userResult.success ? org.memberships.length > 0 : false,
     }));
 
     return {

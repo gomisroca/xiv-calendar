@@ -3,6 +3,7 @@ import { type Permission, type User } from "generated/prisma";
 import { type ActionResult } from "@/utils/actions";
 import { auth } from ".";
 import { getOrgIdFromEvent } from "../actions/events";
+import { redirect } from "next/navigation";
 
 interface RequirePermissionArgs {
   userId: string;
@@ -10,9 +11,18 @@ interface RequirePermissionArgs {
   permission: Permission;
 }
 
-export async function checkUser(): Promise<ActionResult<User>> {
+type ReadUserOptions = {
+  redirectTo?: string;
+};
+export async function readUser(
+  options?: ReadUserOptions,
+): Promise<ActionResult<User>> {
   const session = await auth();
   if (!session?.user) {
+    if (options?.redirectTo) {
+      redirect(options.redirectTo);
+    }
+
     return {
       success: false,
       error: "You must be signed in",
@@ -27,6 +37,10 @@ export async function checkUser(): Promise<ActionResult<User>> {
   });
 
   if (!user) {
+    if (options?.redirectTo) {
+      redirect(options.redirectTo);
+    }
+
     return {
       success: false,
       error: "You are not a registered user",

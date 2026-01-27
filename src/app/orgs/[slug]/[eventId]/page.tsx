@@ -3,16 +3,15 @@ import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "./rsvp-buttons";
 import { maskAttendance } from "@/utils/events";
-import { checkUser, requireEventOrgMember } from "@/server/auth/permissions";
+import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const { eventId } = await params;
 
-  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
+  const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
   const event = unwrap(await getSingleEvent({ eventId }));
@@ -20,7 +19,7 @@ export default async function EventId({ params }: { params: Params }) {
   if (!event) notFound();
 
   const initialStatus = event.attendance.find(
-    (attendance) => attendance.userId === userCheck.data.id,
+    (attendance) => attendance.userId === user.id,
   )?.status;
 
   return (

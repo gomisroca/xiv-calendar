@@ -1,21 +1,21 @@
 import { notFound, redirect } from "next/navigation";
 import {
-  checkUser,
+  readUser,
   requireEventOrgMember,
   requirePermission,
 } from "@/server/auth/permissions";
 import EditEventForm from "./edit-event-form";
 import { db } from "@/server/db";
 import { Permission } from "generated/prisma";
+import { unwrap } from "@/utils/actions";
 
 type Params = Promise<{ slug: string; eventId: string }>;
 export default async function EditEventPage({ params }: { params: Params }) {
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const { eventId } = await params;
 
-  const membership = await requireEventOrgMember(userCheck.data.id, eventId);
+  const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
   const event = await db.event.findUnique({
@@ -23,9 +23,9 @@ export default async function EditEventPage({ params }: { params: Params }) {
   });
   if (!event) notFound();
 
-  if (userCheck.data.id !== event.createdById) {
+  if (user.id !== event.createdById) {
     const permissions = await requirePermission({
-      userId: userCheck.data.id,
+      userId: user.id,
       orgId: event.orgId,
       permission: Permission.EVENT_UPDATE,
     });

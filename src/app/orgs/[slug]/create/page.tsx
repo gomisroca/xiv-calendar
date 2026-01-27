@@ -1,14 +1,14 @@
 import { db } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import { CreateEventForm } from "./create-event-form";
-import { checkUser, requireOrgMember } from "@/server/auth/permissions";
+import { readUser, requireOrgMember } from "@/server/auth/permissions";
+import { unwrap } from "@/utils/actions";
 
 type Params = Promise<{ slug: string }>;
 export default async function CreateEventPage({ params }: { params: Params }) {
   const { slug } = await params;
 
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const org = await db.organization.findUnique({
     where: { slug },
@@ -16,7 +16,7 @@ export default async function CreateEventPage({ params }: { params: Params }) {
 
   if (!org) notFound();
 
-  const membership = await requireOrgMember(userCheck.data.id, org.id);
+  const membership = await requireOrgMember(user.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
   return (

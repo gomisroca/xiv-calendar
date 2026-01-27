@@ -1,12 +1,13 @@
 import { db } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import {
-  checkUser,
+  readUser,
   requireOrgMember,
   requirePermission,
 } from "@/server/auth/permissions";
 import EditOrganizationForm from "./edit-org-form";
 import { Permission } from "generated/prisma";
+import { unwrap } from "@/utils/actions";
 
 type Params = Promise<{ slug: string }>;
 export default async function EditOrganizationPage({
@@ -16,8 +17,7 @@ export default async function EditOrganizationPage({
 }) {
   const { slug } = await params;
 
-  const userCheck = await checkUser();
-  if (!userCheck.success) return redirect("/unauthorized");
+  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
 
   const org = await db.organization.findUnique({
     where: { slug },
@@ -25,11 +25,11 @@ export default async function EditOrganizationPage({
 
   if (!org) notFound();
 
-  const membership = await requireOrgMember(userCheck.data.id, org.id);
+  const membership = await requireOrgMember(user.id, org.id);
   if (!membership.success) return redirect("/unauthorized");
 
   const permissions = await requirePermission({
-    userId: userCheck.data.id,
+    userId: user.id,
     orgId: org.id,
     permission: Permission.ORG_UPDATE,
   });
