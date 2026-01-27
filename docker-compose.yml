@@ -1,0 +1,12 @@
+services:
+  app:
+    platform: "linux/amd64"
+    build:
+      context: .
+      dockerfile: dockerfile
+    working_dir: /app
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    image: xiv-calendar
