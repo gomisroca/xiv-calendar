@@ -1,4 +1,4 @@
-import { getOrganizationEvents } from "@/server/actions/events";
+import { readOrganizationEvents } from "@/server/actions/events";
 import { db } from "@/server/db";
 import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
@@ -40,7 +40,7 @@ export default async function OrgView({ params }: { params: Params }) {
     permission: "ORG_UPDATE",
   });
 
-  const events = unwrap(await getOrganizationEvents({ orgId: org.id }));
+  const events = unwrap(await readOrganizationEvents({ orgId: org.id }));
 
   return (
     <>

@@ -1,8 +1,8 @@
-import { getSingleEvent } from "@/server/actions/events";
+import { readEvent } from "@/server/actions/events";
 import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
-import { maskAttendance } from "@/utils/events";
+import { maskAttendance } from "@/utils/attendance";
 import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
 
 type Params = Promise<{ eventId: string }>;
@@ -14,7 +14,7 @@ export default async function EventId({ params }: { params: Params }) {
   const membership = await requireEventOrgMember(user.id, eventId);
   if (!membership.success) return redirect("/unauthorized");
 
-  const event = unwrap(await getSingleEvent({ eventId }));
+  const event = unwrap(await readEvent({ eventId }));
 
   if (!event) notFound();
 

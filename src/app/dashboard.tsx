@@ -1,12 +1,12 @@
 import { unwrap } from "@/utils/actions";
 import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
-import { getUserEvents, type UserEvent } from "@/server/actions/events";
+import { readUserEvents, type UserEvent } from "@/server/actions/events";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
 import { twMerge } from "tailwind-merge";
 import { readUser } from "@/server/auth/permissions";
 import {
-  getUserOrganizations,
+  readUserOrganizations,
   type OrganizationWithRole,
 } from "@/server/actions/organizations";
 import Image from "next/image";
@@ -209,8 +209,8 @@ export default async function Dashboard({
   const actionFilter =
     filter === "past" ? "PAST" : filter === "all" ? "ALL" : "UPCOMING";
 
-  const events = unwrap(await getUserEvents({ filter: actionFilter }));
-  const organizations = unwrap(await getUserOrganizations());
+  const events = unwrap(await readUserEvents({ filter: actionFilter }));
+  const organizations = unwrap(await readUserOrganizations());
 
   return (
     <div>

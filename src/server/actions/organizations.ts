@@ -241,7 +241,7 @@ export type OrganizationWithRole = {
   permissions: Permission[];
 };
 
-export async function getUserOrganizations(): Promise<
+export async function readUserOrganizations(): Promise<
   ActionResult<OrganizationWithRole[]>
 > {
   const userResult = await readUser();
@@ -304,7 +304,7 @@ export async function getUserOrganizations(): Promise<
   }
 }
 
-export async function getPublicOrganizations(): Promise<
+export async function readPublicOrganizations(): Promise<
   ActionResult<
     (Pick<Organization, "id" | "name" | "slug" | "image" | "description"> & {
       totalMembers: number;

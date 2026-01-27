@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { type Permission, type User } from "generated/prisma";
 import { type ActionResult } from "@/utils/actions";
 import { auth } from ".";
-import { getOrgIdFromEvent } from "../actions/events";
+import { readOrgIdFromEvent } from "@/utils/events";
 import { redirect } from "next/navigation";
 
 interface RequirePermissionArgs {
@@ -114,7 +114,7 @@ export async function requireEventOrgMember(
   userId: string,
   eventId: string,
 ): Promise<ActionResult<void>> {
-  const orgId = await getOrgIdFromEvent(eventId);
+  const orgId = await readOrgIdFromEvent(eventId);
 
   if (!orgId) {
     return {
