@@ -1,17 +1,16 @@
 import { notFound, redirect } from "next/navigation";
 import {
-  readUser,
   requireEventOrgMember,
   requirePermission,
+  requireUser,
 } from "@/server/auth/permissions";
 import EditEventForm from "./edit-event-form";
 import { db } from "@/server/db";
 import { Permission } from "generated/prisma";
-import { unwrap } from "@/utils/actions";
 
 type Params = Promise<{ slug: string; eventId: string }>;
 export default async function EditEventPage({ params }: { params: Params }) {
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const { eventId } = await params;
 

@@ -5,8 +5,8 @@ import { notFound, redirect } from "next/navigation";
 import Calendar from "./calendar";
 import {
   hasPermission,
-  readUser,
   requireOrgMember,
+  requireUser,
 } from "@/server/auth/permissions";
 import Link from "next/link";
 import { DiscordIcon } from "@/app/_components/ui/discord-button";
@@ -17,7 +17,7 @@ type Params = Promise<{ slug: string }>;
 export default async function OrgView({ params }: { params: Params }) {
   const { slug } = await params;
 
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const org = await db.organization.findUnique({
     where: { slug },

@@ -3,11 +3,11 @@ import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
 import { maskAttendance } from "@/utils/attendance";
-import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
+import { requireEventOrgMember, requireUser } from "@/server/auth/permissions";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const { eventId } = await params;
 

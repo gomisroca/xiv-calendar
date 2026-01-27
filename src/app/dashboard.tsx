@@ -4,7 +4,7 @@ import { readUserEvents, type UserEvent } from "@/server/actions/events";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
 import { twMerge } from "tailwind-merge";
-import { readUser } from "@/server/auth/permissions";
+import { requireUser } from "@/server/auth/permissions";
 import {
   readUserOrganizations,
   type OrganizationWithRole,
@@ -203,7 +203,7 @@ export default async function Dashboard({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const filter = (await searchParams).filter ?? "upcoming";
   const actionFilter =

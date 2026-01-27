@@ -1,11 +1,10 @@
-import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
-import { unwrap } from "@/utils/actions";
+import { requireEventOrgMember, requireUser } from "@/server/auth/permissions";
 import { getEventAttendanceUsers, maskAttendance } from "@/utils/attendance";
 import { redirect } from "next/navigation";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventAttendance({ params }: { params: Params }) {
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const { eventId } = await params;
 

@@ -1,13 +1,12 @@
 import { db } from "@/server/db";
 import { notFound, redirect } from "next/navigation";
 import {
-  readUser,
   requireOrgMember,
   requirePermission,
+  requireUser,
 } from "@/server/auth/permissions";
 import EditOrganizationForm from "./edit-org-form";
 import { Permission } from "generated/prisma";
-import { unwrap } from "@/utils/actions";
 
 type Params = Promise<{ slug: string }>;
 export default async function EditOrganizationPage({
@@ -17,7 +16,7 @@ export default async function EditOrganizationPage({
 }) {
   const { slug } = await params;
 
-  const user = unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  const user = await requireUser();
 
   const org = await db.organization.findUnique({
     where: { slug },

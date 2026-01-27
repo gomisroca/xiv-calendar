@@ -11,18 +11,9 @@ interface RequirePermissionArgs {
   permission: Permission;
 }
 
-type ReadUserOptions = {
-  redirectTo?: string;
-};
-export async function readUser(
-  options?: ReadUserOptions,
-): Promise<ActionResult<User>> {
+export async function readUser(): Promise<ActionResult<User>> {
   const session = await auth();
   if (!session?.user) {
-    if (options?.redirectTo) {
-      redirect(options.redirectTo);
-    }
-
     return {
       success: false,
       error: "You must be signed in",
@@ -37,10 +28,6 @@ export async function readUser(
   });
 
   if (!user) {
-    if (options?.redirectTo) {
-      redirect(options.redirectTo);
-    }
-
     return {
       success: false,
       error: "You are not a registered user",
@@ -49,6 +36,16 @@ export async function readUser(
   }
 
   return { success: true, data: user };
+}
+
+export async function requireUser(redirectTo = "/unauthorized"): Promise<User> {
+  const result = await readUser();
+
+  if (!result.success) {
+    redirect(redirectTo);
+  }
+
+  return result.data;
 }
 
 export async function hasPermission({

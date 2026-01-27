@@ -1,9 +1,8 @@
 import CreateOrganizationForm from "./create-org-form";
-import { readUser } from "@/server/auth/permissions";
-import { unwrap } from "@/utils/actions";
+import { requireUser } from "@/server/auth/permissions";
 
 export default async function CreateOrgPage() {
-  unwrap(await readUser({ redirectTo: "/unauthorized" }));
+  await requireUser();
 
   return (
     <div className="mx-auto mt-8 max-w-md">
