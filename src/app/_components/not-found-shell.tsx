@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { DiscordButton } from "@/app/logged-out-landing";
+import DiscordButton from "@/app/_components/ui/discord-button";
 
 export default function NotFoundShell({
   title,

@@ -1,7 +1,7 @@
 "use client";
 
 import ThemeToggle from "@/app/_components/ui/theme-changer";
-import { DiscordIcon } from "@/app/logged-out-landing";
+import { DiscordIcon } from "@/app/_components/ui/discord-button";
 import { LogOut } from "lucide-react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import Image from "next/image";

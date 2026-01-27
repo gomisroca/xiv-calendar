@@ -1,7 +1,7 @@
 import { getSingleEvent } from "@/server/actions/events";
 import { unwrap } from "@/utils/actions";
 import { notFound, redirect } from "next/navigation";
-import RSVPButtons from "./rsvp-buttons";
+import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
 import { maskAttendance } from "@/utils/events";
 import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
 

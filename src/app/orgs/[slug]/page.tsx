@@ -9,7 +9,7 @@ import {
   requireOrgMember,
 } from "@/server/auth/permissions";
 import Link from "next/link";
-import { DiscordIcon } from "@/app/logged-out-landing";
+import { DiscordIcon } from "@/app/_components/ui/discord-button";
 import { env } from "@/env";
 import { Pencil } from "lucide-react";
 

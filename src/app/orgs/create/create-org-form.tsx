@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useUploadThing } from "@/utils/uploadthing";
 import Link from "next/link";
 import { env } from "process";
-import { DiscordIcon } from "@/app/logged-out-landing";
+import { DiscordIcon } from "@/app/_components/ui/discord-button";
 
 export default function CreateOrganizationForm() {
   const [loading, setLoading] = useState(false);

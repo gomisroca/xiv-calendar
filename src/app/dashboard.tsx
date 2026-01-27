@@ -1,5 +1,5 @@
 import { unwrap } from "@/utils/actions";
-import RSVPButtons from "./orgs/[slug]/[eventId]/rsvp-buttons";
+import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
 import { getUserEvents, type UserEvent } from "@/server/actions/events";
 import Link from "next/link";
 import { type EventStatus } from "generated/prisma";
