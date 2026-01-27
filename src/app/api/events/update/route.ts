@@ -3,11 +3,8 @@ import { db } from "@/server/db";
 import { EventStatus } from "generated/prisma";
 import { env } from "@/env";
 import { z } from "zod";
-import {
-  getEventAttendanceCounts,
-  RATE_LIMIT_MS,
-  renderEventEmbed,
-} from "@/utils/events";
+import { RATE_LIMIT_MS, renderEventEmbed } from "@/utils/events";
+import { getEventAttendanceCounts } from "@/utils/attendance";
 
 const DiscordRSVPSchema = z.object({
   eventId: z.string(),

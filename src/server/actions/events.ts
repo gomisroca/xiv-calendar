@@ -11,11 +11,8 @@ import {
   requirePermission,
 } from "../auth/permissions";
 import { env } from "@/env";
-import {
-  getEventAttendanceCounts,
-  RATE_LIMIT_MS,
-  renderEventEmbed,
-} from "@/utils/events";
+import { RATE_LIMIT_MS, renderEventEmbed } from "@/utils/events";
+import { getEventAttendanceCounts } from "@/utils/attendance";
 import { redirect } from "next/navigation";
 
 const CreateEventSchema = z.object({
@@ -332,7 +329,214 @@ export type EventWithAttendance = {
   };
 };
 
-export async function getOrganizationEvents({
+export async function readEvent({
+  eventId,
+}: {
+  eventId: string;
+}): Promise<ActionResult<EventWithAttendance>> {
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
+
+  const membership = await requireEventOrgMember(user.id, eventId);
+  if (!membership.success) {
+    return redirect("/unauthorized");
+  }
+
+  try {
+    const event = await db.event.findUnique({
+      where: {
+        id: eventId,
+      },
+      include: {
+        org: { select: { id: true } },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        eventAttendances: {
+          select: {
+            userId: true,
+            user: {
+              select: {
+                name: true,
+              },
+            },
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      return {
+        success: false,
+        error: "Event not found",
+        code: "NOT_FOUND",
+      };
+    }
+
+    const mapped: EventWithAttendance = {
+      id: event.id,
+      orgId: event.org.id,
+      name: event.name,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      description: event.description,
+      location: event.location,
+      attendance: event.eventAttendances.map((attendance) => {
+        return {
+          userId: attendance.userId,
+          userName: attendance.user.name,
+          status: attendance.status,
+        };
+      }),
+      createdBy: {
+        id: event.createdBy.id,
+        name: event.createdBy.name,
+      },
+    };
+
+    return {
+      success: true,
+      data: mapped,
+    };
+  } catch (err: unknown) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to get event",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+export type UserEvent = {
+  id: string;
+  name: string;
+  startsAt: Date;
+  endsAt: Date | null;
+  description: string | null;
+  location: string | null;
+
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+
+  myStatus: EventStatus | null;
+  attendanceCounts: {
+    attending: number;
+    maybe: number;
+    notAttending: number;
+    pending: number;
+  };
+};
+
+export type UserEventsFilter = "ALL" | "UPCOMING" | "PAST";
+
+export async function readUserEvents({
+  filter = "UPCOMING",
+}: {
+  filter?: UserEventsFilter;
+} = {}): Promise<ActionResult<UserEvent[]>> {
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
+
+  const now = new Date();
+
+  const timeFilter =
+    filter === "UPCOMING"
+      ? { startsAt: { gte: now } }
+      : filter === "PAST"
+        ? { startsAt: { lt: now } }
+        : {};
+
+  try {
+    const events = await db.event.findMany({
+      where: {
+        ...timeFilter,
+        org: {
+          memberships: {
+            some: {
+              userId: user.id,
+            },
+          },
+        },
+      },
+      orderBy: {
+        startsAt: filter === "PAST" ? "desc" : "asc",
+      },
+      include: {
+        org: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            _count: {
+              select: { memberships: true },
+            },
+          },
+        },
+        eventAttendances: {
+          select: {
+            userId: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    const mapped: UserEvent[] = events.map((event) => {
+      const myAttendance = event.eventAttendances.find(
+        (a) => a.userId === user.id,
+      );
+
+      const counts = {
+        attending: 0,
+        maybe: 0,
+        notAttending: 0,
+        pending: event.org._count.memberships,
+      };
+
+      for (const a of event.eventAttendances) {
+        if (a.status === "ATTENDING") counts.attending++;
+        if (a.status === "MAYBE") counts.maybe++;
+        if (a.status === "NOT_ATTENDING") counts.notAttending++;
+      }
+
+      return {
+        id: event.id,
+        name: event.name,
+        startsAt: event.startsAt,
+        endsAt: event.endsAt,
+        description: event.description,
+        location: event.location,
+        organization: event.org,
+        myStatus: myAttendance?.status ?? null,
+        attendanceCounts: counts,
+      };
+    });
+
+    return {
+      success: true,
+      data: mapped,
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to load events",
+      code: "UNKNOWN",
+    };
+  }
+}
+
+export async function readOrganizationEvents({
   orgId,
 }: {
   orgId: string;
@@ -425,90 +629,6 @@ export async function getOrganizationEvents({
     return {
       success: false,
       error: "Failed to get events",
-      code: "UNKNOWN",
-    };
-  }
-}
-
-export async function getSingleEvent({
-  eventId,
-}: {
-  eventId: string;
-}): Promise<ActionResult<EventWithAttendance>> {
-  const userResult = await readUser();
-  if (!userResult.success) return userResult;
-  const user = userResult.data;
-
-  const membership = await requireEventOrgMember(user.id, eventId);
-  if (!membership.success) {
-    return redirect("/unauthorized");
-  }
-
-  try {
-    const event = await db.event.findUnique({
-      where: {
-        id: eventId,
-      },
-      include: {
-        org: { select: { id: true } },
-        createdBy: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        eventAttendances: {
-          select: {
-            userId: true,
-            user: {
-              select: {
-                name: true,
-              },
-            },
-            status: true,
-          },
-        },
-      },
-    });
-
-    if (!event) {
-      return {
-        success: false,
-        error: "Event not found",
-        code: "NOT_FOUND",
-      };
-    }
-
-    const mapped: EventWithAttendance = {
-      id: event.id,
-      orgId: event.org.id,
-      name: event.name,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      description: event.description,
-      location: event.location,
-      attendance: event.eventAttendances.map((attendance) => {
-        return {
-          userId: attendance.userId,
-          userName: attendance.user.name,
-          status: attendance.status,
-        };
-      }),
-      createdBy: {
-        id: event.createdBy.id,
-        name: event.createdBy.name,
-      },
-    };
-
-    return {
-      success: true,
-      data: mapped,
-    };
-  } catch (err: unknown) {
-    console.error(err);
-    return {
-      success: false,
-      error: "Failed to get event",
       code: "UNKNOWN",
     };
   }
@@ -656,138 +776,4 @@ export async function rsvpToEvent(
       code: "UNKNOWN",
     };
   }
-}
-
-export type UserEvent = {
-  id: string;
-  name: string;
-  startsAt: Date;
-  endsAt: Date | null;
-  description: string | null;
-  location: string | null;
-
-  organization: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-
-  myStatus: EventStatus | null;
-  attendanceCounts: {
-    attending: number;
-    maybe: number;
-    notAttending: number;
-    pending: number;
-  };
-};
-
-export type UserEventsFilter = "ALL" | "UPCOMING" | "PAST";
-
-export async function getUserEvents({
-  filter = "UPCOMING",
-}: {
-  filter?: UserEventsFilter;
-} = {}): Promise<ActionResult<UserEvent[]>> {
-  const userResult = await readUser();
-  if (!userResult.success) return userResult;
-  const user = userResult.data;
-
-  const now = new Date();
-
-  const timeFilter =
-    filter === "UPCOMING"
-      ? { startsAt: { gte: now } }
-      : filter === "PAST"
-        ? { startsAt: { lt: now } }
-        : {};
-
-  try {
-    const events = await db.event.findMany({
-      where: {
-        ...timeFilter,
-        org: {
-          memberships: {
-            some: {
-              userId: user.id,
-            },
-          },
-        },
-      },
-      orderBy: {
-        startsAt: filter === "PAST" ? "desc" : "asc",
-      },
-      include: {
-        org: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            _count: {
-              select: { memberships: true },
-            },
-          },
-        },
-        eventAttendances: {
-          select: {
-            userId: true,
-            status: true,
-          },
-        },
-      },
-    });
-
-    const mapped: UserEvent[] = events.map((event) => {
-      const myAttendance = event.eventAttendances.find(
-        (a) => a.userId === user.id,
-      );
-
-      const counts = {
-        attending: 0,
-        maybe: 0,
-        notAttending: 0,
-        pending: event.org._count.memberships,
-      };
-
-      for (const a of event.eventAttendances) {
-        if (a.status === "ATTENDING") counts.attending++;
-        if (a.status === "MAYBE") counts.maybe++;
-        if (a.status === "NOT_ATTENDING") counts.notAttending++;
-      }
-
-      return {
-        id: event.id,
-        name: event.name,
-        startsAt: event.startsAt,
-        endsAt: event.endsAt,
-        description: event.description,
-        location: event.location,
-        organization: event.org,
-        myStatus: myAttendance?.status ?? null,
-        attendanceCounts: counts,
-      };
-    });
-
-    return {
-      success: true,
-      data: mapped,
-    };
-  } catch (err) {
-    console.error(err);
-    return {
-      success: false,
-      error: "Failed to load events",
-      code: "UNKNOWN",
-    };
-  }
-}
-
-export async function getOrgIdFromEvent(
-  eventId: string,
-): Promise<string | null> {
-  const event = await db.event.findUnique({
-    where: { id: eventId },
-    select: { orgId: true },
-  });
-
-  return event?.orgId ?? null;
 }

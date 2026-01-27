@@ -1,6 +1,6 @@
 import { readUser, requireEventOrgMember } from "@/server/auth/permissions";
 import { unwrap } from "@/utils/actions";
-import { getEventAttendanceUsers, maskAttendance } from "@/utils/events";
+import { getEventAttendanceUsers, maskAttendance } from "@/utils/attendance";
 import { redirect } from "next/navigation";
 
 type Params = Promise<{ eventId: string }>;
