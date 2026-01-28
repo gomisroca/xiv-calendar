@@ -166,9 +166,6 @@ function OrganizationCard({ org }: { org: OrganizationWithRole }) {
           </p>
         </div>
       </Link>
-      <div className="my-2 flex items-center justify-center">
-        <span className="text-sm">{org.description ?? "No description"}</span>
-      </div>
     </div>
   );
 }
