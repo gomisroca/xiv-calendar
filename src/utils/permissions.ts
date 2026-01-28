@@ -50,6 +50,7 @@ export async function createDefaultRoles(
           orgId,
           name: role.name,
           permissions: role.permissions,
+          isSystem: true,
         },
       }),
     ),
