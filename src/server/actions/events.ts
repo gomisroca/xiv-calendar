@@ -51,13 +51,6 @@ export async function createEvent(
     location,
   } = parsed.data;
 
-  const permissions = await requirePermission({
-    userId: user.id,
-    orgId: orgId,
-    permission: Permission.EVENT_CREATE,
-  });
-  if (!permissions.success) return permissions;
-
   if (endsAt && endsAt < startsAt) {
     return {
       success: false,
@@ -220,7 +213,7 @@ export async function updateEvent(
         const permissions = await requirePermission({
           userId: user.id,
           orgId,
-          permission: Permission.EVENT_UPDATE,
+          permission: Permission.MANAGE_EVENTS,
         });
         if (!permissions.success) {
           return permissions;

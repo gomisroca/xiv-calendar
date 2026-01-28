@@ -26,7 +26,7 @@ export default async function EditEventPage({ params }: { params: Params }) {
     const permissions = await requirePermission({
       userId: user.id,
       orgId: event.orgId,
-      permission: Permission.EVENT_UPDATE,
+      permission: Permission.MANAGE_EVENTS,
     });
     if (!permissions.success) return redirect("/unauthorized");
   }

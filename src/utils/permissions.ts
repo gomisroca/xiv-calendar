@@ -9,33 +9,24 @@ const DEFAULT_ROLES: DefaultRole[] = [
   {
     name: "Owner",
     permissions: [
-      Permission.ORG_UPDATE,
-      Permission.ROLE_CREATE,
-      Permission.ROLE_UPDATE,
-      Permission.ROLE_DELETE,
-      Permission.ROLE_ASSIGN,
-      Permission.MEMBER_REMOVE,
-      Permission.EVENT_CREATE,
-      Permission.EVENT_UPDATE,
-      Permission.EVENT_DELETE,
+      Permission.MANAGE_ORG,
+      Permission.MANAGE_ROLES,
+      Permission.MANAGE_MEMBERS,
+      Permission.MANAGE_EVENTS,
     ],
   },
   {
     name: "Admin",
     permissions: [
-      Permission.ORG_UPDATE,
-      Permission.ROLE_CREATE,
-      Permission.ROLE_UPDATE,
-      Permission.ROLE_ASSIGN,
-      Permission.MEMBER_REMOVE,
-      Permission.EVENT_CREATE,
-      Permission.EVENT_UPDATE,
-      Permission.EVENT_DELETE,
+      Permission.MANAGE_ORG,
+      Permission.MANAGE_ROLES,
+      Permission.MANAGE_MEMBERS,
+      Permission.MANAGE_EVENTS,
     ],
   },
   {
     name: "Member",
-    permissions: [Permission.EVENT_CREATE, Permission.EVENT_UPDATE],
+    permissions: [],
   },
 ];
 

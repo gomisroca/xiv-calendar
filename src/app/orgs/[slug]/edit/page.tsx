@@ -30,7 +30,7 @@ export default async function EditOrganizationPage({
   const permissions = await requirePermission({
     userId: user.id,
     orgId: org.id,
-    permission: Permission.ORG_UPDATE,
+    permission: Permission.MANAGE_ORG,
   });
   if (!permissions.success) return redirect("/unauthorized");
 

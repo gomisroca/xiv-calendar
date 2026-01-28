@@ -130,7 +130,7 @@ export async function updateOrganization(
       const permissions = await requirePermission({
         userId: user.id,
         orgId,
-        permission: Permission.ORG_UPDATE,
+        permission: Permission.MANAGE_ORG,
       });
       if (!permissions.success) {
         return permissions;
