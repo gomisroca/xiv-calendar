@@ -48,6 +48,35 @@ export async function requireUser(redirectTo = "/unauthorized"): Promise<User> {
   return result.data;
 }
 
+export function can(permissions: Set<Permission>, permission: Permission) {
+  return permissions.has(permission);
+}
+
+export async function getUserPermissions({
+  userId,
+  orgId,
+}: {
+  userId: string;
+  orgId: string;
+}): Promise<Set<Permission>> {
+  const membership = await db.membership.findUnique({
+    where: {
+      orgId_userId: { orgId, userId },
+    },
+    select: {
+      role: {
+        select: {
+          permissions: true,
+        },
+      },
+    },
+  });
+
+  if (!membership?.role) return new Set();
+
+  return new Set(membership.role.permissions);
+}
+
 export async function hasPermission({
   userId,
   orgId,
