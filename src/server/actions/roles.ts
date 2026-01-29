@@ -115,8 +115,9 @@ export async function deleteRole({
     throw new Error("System roles cannot be deleted");
   }
 
-  await db.role.delete({
+  await db.role.update({
     where: { id: roleId },
+    data: { isArchived: true },
   });
 
   return { success: true };

@@ -23,7 +23,7 @@ export default async function ManageRolesPage({ params }: { params: Params }) {
   if (!permissions.success) return redirect("/unauthorized");
 
   const roles = await db.role.findMany({
-    where: { orgId: org.id, isSystem: false },
+    where: { orgId: org.id, isSystem: false, isArchived: false },
   });
 
   return (
