@@ -46,7 +46,7 @@ export async function AdminControls({
       )}
       {canManageMembers && (
         <Link
-          href={`/orgs/${orgSlug}/roles/assign`}
+          href={`/orgs/${orgSlug}/members`}
           className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <User />
