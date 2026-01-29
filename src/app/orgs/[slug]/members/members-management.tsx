@@ -83,6 +83,7 @@ export default function MembersManagementPage({
                     await assignRoleToMember({
                       orgId,
                       roleId: e.target.value,
+                      userId: member.id,
                     });
                   } finally {
                     setSavingUserId(null);
@@ -112,6 +113,7 @@ export default function MembersManagementPage({
                     setRemovingUserId(member.id);
                     await removeMember({
                       orgId,
+                      userId: member.id,
                     });
                   } finally {
                     setRemovingUserId(null);

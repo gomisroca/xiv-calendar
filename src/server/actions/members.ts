@@ -2,11 +2,13 @@
 
 import { db } from "@/server/db";
 import { type ActionResult } from "@/utils/actions";
-import { readUser } from "@/server/auth/permissions";
+import { readUser, requirePermission } from "@/server/auth/permissions";
+import { Permission } from "generated/prisma";
 
 interface AssignRoleToMemberArgs {
   orgId: string;
   roleId: string;
+  userId: string;
 }
 
 export async function assignRoleToMember(
@@ -16,13 +18,30 @@ export async function assignRoleToMember(
   if (!userResult.success) return userResult;
   const user = userResult.data;
 
-  const { orgId, roleId } = args;
+  const { orgId, roleId, userId } = args;
+
+  if (user.id === userId) {
+    return {
+      success: false,
+      error: "Cannot assign role to self",
+      code: "FORBIDDEN",
+    };
+  }
+
+  const permissions = await requirePermission({
+    userId: user.id,
+    orgId,
+    permission: Permission.MANAGE_MEMBERS,
+  });
+  if (!permissions.success) {
+    return permissions;
+  }
 
   try {
     // Ensure membership exists
     const membership = await db.membership.findUnique({
       where: {
-        orgId_userId: { orgId, userId: user.id },
+        orgId_userId: { orgId, userId },
       },
     });
 
@@ -57,7 +76,7 @@ export async function assignRoleToMember(
 
     await db.membership.update({
       where: {
-        orgId_userId: { orgId, userId: user.id },
+        orgId_userId: { orgId, userId },
       },
       data: { roleId },
     });
@@ -75,6 +94,7 @@ export async function assignRoleToMember(
 
 interface RemoveMemberArgs {
   orgId: string;
+  userId: string;
 }
 
 export async function removeMember(
@@ -84,12 +104,29 @@ export async function removeMember(
   if (!userResult.success) return userResult;
   const user = userResult.data;
 
-  const { orgId } = args;
+  const { orgId, userId } = args;
+
+  if (user.id === userId) {
+    return {
+      success: false,
+      error: "Cannot remove self",
+      code: "FORBIDDEN",
+    };
+  }
+
+  const permissions = await requirePermission({
+    userId: user.id,
+    orgId,
+    permission: Permission.MANAGE_MEMBERS,
+  });
+  if (!permissions.success) {
+    return permissions;
+  }
 
   try {
     const membership = await db.membership.findUnique({
       where: {
-        orgId_userId: { orgId, userId: user.id },
+        orgId_userId: { orgId, userId },
       },
       include: {
         role: {
@@ -119,7 +156,7 @@ export async function removeMember(
 
     await db.membership.delete({
       where: {
-        orgId_userId: { orgId, userId: user.id },
+        orgId_userId: { orgId, userId },
       },
     });
 
