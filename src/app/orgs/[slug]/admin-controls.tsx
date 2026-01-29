@@ -1,6 +1,6 @@
 import { getUserPermissions, can } from "@/server/auth/permissions";
 import Link from "next/link";
-import { Pencil, User } from "lucide-react";
+import { Pencil, Ticket, User } from "lucide-react";
 import BotButton from "@/app/_components/ui/bot-button";
 
 export async function AdminControls({
@@ -31,7 +31,7 @@ export async function AdminControls({
             className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Pencil />
-            Manage Organization
+            Organization
           </Link>
         </>
       )}
@@ -40,8 +40,8 @@ export async function AdminControls({
           href={`/orgs/${orgSlug}/roles/`}
           className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <Pencil />
-          Manage Roles
+          <Ticket />
+          Roles
         </Link>
       )}
       {canManageMembers && (
@@ -50,7 +50,7 @@ export async function AdminControls({
           className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <User />
-          Manage Members
+          Members
         </Link>
       )}
     </div>
