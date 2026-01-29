@@ -4,9 +4,7 @@ import { createOrganization } from "@/server/actions/organizations";
 import { unwrap } from "@/utils/actions";
 import { useState } from "react";
 import { useUploadThing } from "@/utils/uploadthing";
-import Link from "next/link";
-import { env } from "process";
-import { DiscordIcon } from "@/app/_components/ui/discord-button";
+import BotButton from "@/app/_components/ui/bot-button";
 
 export default function CreateOrganizationForm() {
   const [loading, setLoading] = useState(false);
@@ -149,15 +147,7 @@ export default function CreateOrganizationForm() {
       </button>
 
       {/* Discord Bot Link */}
-      {showDiscordBotLink && (
-        <Link
-          href={`https://discord.com/oauth2/authorize?client_id=${env.BOT_ID}&permissions=17600775989312&integration_type=0&scope=bot`}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <DiscordIcon />
-          Invite Bot to Get Started
-        </Link>
-      )}
+      {showDiscordBotLink && <BotButton />}
 
       {/* Message */}
       {message && <p className="text-sm text-slate-500">{message}</p>}
