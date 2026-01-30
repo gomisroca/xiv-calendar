@@ -2,15 +2,18 @@ import { getUserPermissions, can } from "@/server/auth/permissions";
 import Link from "next/link";
 import { Pencil, Ticket, User } from "lucide-react";
 import BotButton from "@/app/_components/ui/bot-button";
+import DeleteOrganizationButton from "./edit/delete-org-button";
 
 export async function AdminControls({
   userId,
   orgId,
   orgSlug,
+  orgCreatedById,
 }: {
   userId: string;
   orgId: string;
   orgSlug: string;
+  orgCreatedById: string;
 }) {
   const permissions = await getUserPermissions({ userId, orgId });
 
@@ -56,6 +59,9 @@ export async function AdminControls({
             <User />
             Members
           </Link>
+        )}
+        {userId === orgCreatedById && (
+          <DeleteOrganizationButton orgId={orgId} />
         )}
       </div>
     </div>

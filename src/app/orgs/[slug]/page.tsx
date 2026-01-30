@@ -18,7 +18,7 @@ export default async function OrgView({ params }: { params: Params }) {
       id: true,
       name: true,
       slug: true,
-      createdBy: { select: { id: true } },
+      createdBy: { select: { id: true, name: true } },
     },
   });
 
@@ -32,7 +32,12 @@ export default async function OrgView({ params }: { params: Params }) {
   return (
     <>
       {/* Admin controls */}
-      <AdminControls userId={user.id} orgId={org.id} orgSlug={org.slug} />
+      <AdminControls
+        userId={user.id}
+        orgId={org.id}
+        orgSlug={org.slug}
+        orgCreatedById={org.createdBy.id}
+      />
       <ul>
         {events.map((event) => (
           <li key={event.id}>
