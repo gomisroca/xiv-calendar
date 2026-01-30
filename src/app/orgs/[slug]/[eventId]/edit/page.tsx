@@ -7,6 +7,7 @@ import {
 import EditEventForm from "./edit-event-form";
 import { db } from "@/server/db";
 import { Permission } from "generated/prisma";
+import DeleteEventButton from "./delete-event-button";
 
 type Params = Promise<{ slug: string; eventId: string }>;
 export default async function EditEventPage({ params }: { params: Params }) {
@@ -35,6 +36,7 @@ export default async function EditEventPage({ params }: { params: Params }) {
     <div className="mx-auto mt-8 max-w-md">
       <h1 className="mb-4 text-2xl font-bold">Editing Event {event.name}</h1>
       <EditEventForm event={event} />
+      <DeleteEventButton eventId={event.id} />
     </div>
   );
 }

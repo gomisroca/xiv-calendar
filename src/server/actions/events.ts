@@ -303,6 +303,51 @@ export async function updateEvent(
   }
 }
 
+export async function deleteEvent(
+  eventId: string,
+): Promise<ActionResult<string>> {
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
+
+  try {
+    await db.$transaction(async (trx) => {
+      const event = await trx.event.findUnique({
+        where: { id: eventId },
+        select: { createdById: true, orgId: true },
+      });
+      if (!event) throw new Error("Invariant: Event not found");
+
+      if (event.createdById !== user.id) {
+        const permissions = await requirePermission({
+          userId: user.id,
+          orgId: event.orgId,
+          permission: Permission.MANAGE_EVENTS,
+        });
+        if (!permissions.success) {
+          return permissions;
+        }
+      }
+
+      await db.event.delete({
+        where: { id: eventId },
+      });
+    });
+
+    return {
+      success: true,
+      data: "Event deleted successfully.",
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to delete event",
+      code: "UNKNOWN",
+    };
+  }
+}
+
 export type EventWithAttendance = {
   id: string;
   orgId: string;
