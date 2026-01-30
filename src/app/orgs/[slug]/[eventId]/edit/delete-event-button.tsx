@@ -40,7 +40,7 @@ export default function DeleteEventButton({ eventId }: { eventId: string }) {
     <>
       <button
         type="button"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={loading || isPending}
         onClick={handleDelete}
       >
