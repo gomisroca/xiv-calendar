@@ -18,41 +18,46 @@ export async function AdminControls({
   const canManageRoles = can(permissions, "MANAGE_ROLES");
   const canManageMembers = can(permissions, "MANAGE_MEMBERS");
 
-  if (!canManageOrg && !canManageRoles && !canManageMembers) {
-    return null;
-  }
   return (
-    <div className="flex gap-2">
-      {canManageOrg && (
-        <>
-          <BotButton />
+    <div className="flex flex-col items-center justify-center gap-2">
+      <Link
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white uppercase transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+        href={`/orgs/${orgSlug}/create`}
+      >
+        Create event
+      </Link>
+      <div className="flex gap-2">
+        {canManageOrg && (
+          <>
+            <BotButton />
+            <Link
+              href={`/orgs/${orgSlug}/edit`}
+              className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Pencil />
+              Organization
+            </Link>
+          </>
+        )}
+        {canManageRoles && (
           <Link
-            href={`/orgs/${orgSlug}/edit`}
+            href={`/orgs/${orgSlug}/roles/`}
             className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Pencil />
-            Organization
+            <Ticket />
+            Roles
           </Link>
-        </>
-      )}
-      {canManageRoles && (
-        <Link
-          href={`/orgs/${orgSlug}/roles/`}
-          className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Ticket />
-          Roles
-        </Link>
-      )}
-      {canManageMembers && (
-        <Link
-          href={`/orgs/${orgSlug}/members`}
-          className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <User />
-          Members
-        </Link>
-      )}
+        )}
+        {canManageMembers && (
+          <Link
+            href={`/orgs/${orgSlug}/members`}
+            className="flex w-fit items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <User />
+            Members
+          </Link>
+        )}
+      </div>
     </div>
   );
 }
