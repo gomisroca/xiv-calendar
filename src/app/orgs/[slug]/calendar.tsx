@@ -19,6 +19,7 @@ export default function Calendar({ slug, events }: CalendarProps) {
     title: e.name,
     start: e.startsAt,
     end: e.endsAt ?? undefined,
+    backgroundColor: "rgba(99, 102, 241, 0.85)", // indigo
     extendedProps: {
       description: e.description,
       location: e.location,
@@ -32,12 +33,22 @@ export default function Calendar({ slug, events }: CalendarProps) {
       plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
       initialView="dayGridWeek"
       firstDay={1}
+      height="auto"
+      nowIndicator
+      navLinks
       events={fcEvents}
       headerToolbar={{
-        left: "prev,next today",
+        left: "prev,next",
         center: "title",
-        right: "dayGridMonth,timeGridWeek,timeGridDay",
+        right: "today dayGridMonth,timeGridWeek,timeGridDay",
       }}
+      buttonText={{
+        today: "Today",
+        month: "Month",
+        week: "Week",
+        day: "Day",
+      }}
+      eventDisplay="block"
       eventClick={(info) => {
         redirect(`/orgs/${slug}/${info.event.id}`);
       }}

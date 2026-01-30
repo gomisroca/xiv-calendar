@@ -1,3 +1,76 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ===== FullCalendar base ===== */
+.fc {
+  --fc-border-color: rgba(148, 163, 184, 0.2); /* slate-400/20 */
+  --fc-page-bg-color: transparent;
+  --fc-today-bg-color: rgba(99, 102, 241, 0.08); /* indigo-500/8 */
+  font-size: 0.875rem;
+}
+
+/* Dark mode */
+.dark .fc {
+  --fc-border-color: rgba(148, 163, 184, 0.15);
+  --fc-today-bg-color: rgba(99, 102, 241, 0.15);
+}
+
+/* ===== Header ===== */
+.fc-toolbar-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.fc-button {
+  background: transparent !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  color: inherit !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.6rem !important;
+}
+
+.fc-button:hover {
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+
+.fc-button-primary:not(:disabled).fc-button-active {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+}
+
+/* ===== Day headers ===== */
+.fc-col-header-cell {
+  background: transparent;
+  font-weight: 500;
+  padding: 0.5rem 0;
+}
+
+/* ===== Events ===== */
+.fc-event {
+  border-radius: 0.5rem;
+  border: none;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.2);
+}
+
+.fc-event:hover {
+  filter: brightness(1.05);
+}
+
+/* ===== Time grid ===== */
+.fc-timegrid-slot {
+  height: 3rem;
+}
+
+.fc-timegrid-axis {
+  font-size: 0.7rem;
+  color: rgba(100, 116, 139, 0.8);
+}
+
+.fc-daygrid-day:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
