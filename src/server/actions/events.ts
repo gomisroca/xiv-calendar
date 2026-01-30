@@ -351,6 +351,7 @@ export async function deleteEvent(
 export type EventWithAttendance = {
   id: string;
   orgId: string;
+  orgSlug: string;
   name: string;
   startsAt: Date;
   endsAt: Date | null;
@@ -387,7 +388,7 @@ export async function readEvent({
         id: eventId,
       },
       include: {
-        org: { select: { id: true } },
+        org: { select: { id: true, slug: true } },
         createdBy: {
           select: {
             id: true,
@@ -419,6 +420,7 @@ export async function readEvent({
     const mapped: EventWithAttendance = {
       id: event.id,
       orgId: event.org.id,
+      orgSlug: event.org.slug,
       name: event.name,
       startsAt: event.startsAt,
       endsAt: event.endsAt,
@@ -638,7 +640,8 @@ export async function readOrganizationEvents({
     const mapped: EventWithAttendance[] = organization?.events.map((event) => {
       return {
         id: event.id,
-        orgId: event.orgId,
+        orgId: organization.id,
+        orgSlug: organization.slug,
         name: event.name,
         startsAt: event.startsAt,
         endsAt: event.endsAt,

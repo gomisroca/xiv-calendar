@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import RSVPButtons from "@/app/_components/ui/rsvp-buttons";
 import { maskAttendance } from "@/utils/attendance";
 import { requireEventOrgMember, requireUser } from "@/server/auth/permissions";
+import { EventControls } from "./event-controls";
 
 type Params = Promise<{ eventId: string }>;
 export default async function EventId({ params }: { params: Params }) {
@@ -24,6 +25,12 @@ export default async function EventId({ params }: { params: Params }) {
 
   return (
     <>
+      <EventControls
+        userId={user.id}
+        orgId={event.orgId}
+        orgSlug={event.orgSlug}
+        eventId={event.id}
+      />
       <h1>{event.name}</h1>
       <p>Created by {event.createdBy.name}</p>
       <p>Attendance:</p>
