@@ -163,6 +163,49 @@ export async function updateOrganization(
   }
 }
 
+export async function deleteOrganization(
+  orgId: string,
+): Promise<ActionResult<string>> {
+  const userResult = await readUser();
+  if (!userResult.success) return userResult;
+  const user = userResult.data;
+
+  try {
+    await db.$transaction(async (trx) => {
+      const org = await trx.organization.findUnique({
+        where: { id: orgId, createdById: user.id },
+        select: { name: true },
+      });
+      if (!org) throw new Error("Invariant: Organization not found");
+
+      const permissions = await requirePermission({
+        userId: user.id,
+        orgId,
+        permission: Permission.MANAGE_ORG,
+      });
+      if (!permissions.success) {
+        return permissions;
+      }
+
+      await db.organization.delete({
+        where: { id: orgId },
+      });
+    });
+
+    return {
+      success: true,
+      data: "Organization deleted successfully.",
+    };
+  } catch (err) {
+    console.error(err);
+    return {
+      success: false,
+      error: "Failed to delete organization",
+      code: "UNKNOWN",
+    };
+  }
+}
+
 export async function joinOrganization(
   orgId: string,
 ): Promise<ActionResult<string>> {

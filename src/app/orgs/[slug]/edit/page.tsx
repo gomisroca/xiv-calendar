@@ -7,6 +7,7 @@ import {
 } from "@/server/auth/permissions";
 import EditOrganizationForm from "./edit-org-form";
 import { Permission } from "generated/prisma";
+import DeleteOrganizationButton from "./delete-org-button";
 
 type Params = Promise<{ slug: string }>;
 export default async function EditOrganizationPage({
@@ -40,6 +41,9 @@ export default async function EditOrganizationPage({
         Editing Organization {org.name}
       </h1>
       <EditOrganizationForm org={org} />
+      {user.id === org.createdById && (
+        <DeleteOrganizationButton orgId={org.id} />
+      )}
     </div>
   );
 }
